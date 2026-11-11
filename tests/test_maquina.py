@@ -448,3 +448,31 @@ def test_nao_se_move_por_cima_de_tela_de_recompensa_ou_de_fim(banco):
     banco.tick()
     banco.animar(10)
     assert banco.entrada.acoes != []
+
+
+def test_recompensa_nao_identificada_dispara_alerta_mas_nao_para(banco):
+    """Sem o template do token (só existe depois de vê-lo uma vez), o aviso não pode passar batido."""
+    entrar_em_partida(banco)
+    banco.tick("aviso_encontrou")
+    pendente = banco.recompensas.alerta_pendente()
+    assert pendente and pendente["tipo"] == "nao_identificada"
+    assert banco.maquina.pedido_parada is None
+    banco.tick()  # o aviso some
+    banco.tick("aviso_encontrou", "gizmo", dt=30)  # identificada: não gera alerta novo
+    assert banco.recompensas.listar()[1]["confirmado"] is True
+
+
+def test_alerta_de_nao_identificada_pode_ser_desligado(tmp_path):
+    b = Banco(tmp_path, automacao__alertar_nao_identificada=False)
+    b.tick("resgatar")
+    assert b.recompensas.alerta_pendente() is None and b.maquina.tesouros == 1
+
+
+def test_aviso_do_token_sem_botao_durante_a_partida(banco):
+    """O caso real: faixa 'Você encontrou / Acesso à Loja Pirata' no meio do jogo, sem botão."""
+    entrar_em_partida(banco)
+    banco.tick("aviso_encontrou", "acesso_pirata")
+    item = banco.recompensas.listar()[0]
+    assert item["tipo"] == "acesso_pirata" and banco.cliques() == []
+    assert banco.recompensas.alerta_pendente()["tipo"] == "acesso_pirata"
+    assert banco.maquina.pedido_parada

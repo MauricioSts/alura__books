@@ -21,6 +21,9 @@ class Automacao(BaseModel):
     # o app assume que a partida já começou.
     tempo_fila_max_s: float = Field(120, ge=20, le=600)
     apos_acesso_pirata: Literal["parar", "continuar"] = "parar"
+    # O template do Acesso à Loja Pirata só pode ser recortado depois de vê-lo uma vez.
+    # Até lá, o jeito de não perder o aviso é alertar em toda recompensa sem template.
+    alertar_nao_identificada: bool = True
 
 
 class Salto(BaseModel):

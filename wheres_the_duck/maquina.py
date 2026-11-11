@@ -286,7 +286,9 @@ class Maquina:
         self.tesouros += 1
         self.por_tipo[tipo] = self.por_tipo.get(tipo, 0) + 1
         if self.recompensas:
-            item = self.recompensas.registrar(quadro, tipo, score, self.partidas, self.sessao, gatilho)
+            alertar = tipo == NAO_IDENTIFICADA and self.cfg.automacao.alertar_nao_identificada
+            item = self.recompensas.registrar(quadro, tipo, score, self.partidas, self.sessao,
+                                              gatilho, alertar)
         else:
             item = {"id": None, "tipo": tipo, "partida": self.partidas}
         if tipo == PIRATA:

@@ -39,7 +39,7 @@ class ArquivoRecompensas:
             return [dict(i) for i in self._itens]
 
     def registrar(self, quadro: Quadro, tipo: str, score: float, partida: int,
-                  sessao: str, gatilho: str) -> dict:
+                  sessao: str, gatilho: str, alertar: bool = False) -> dict:
         """Salva o print feito ANTES de qualquer clique e cria o registro."""
         agora = self._relogio()
         with self._trava:
@@ -58,7 +58,7 @@ class ArquivoRecompensas:
                 "gatilho": gatilho,
                 "antes": nome,
                 "depois": None,
-                "confirmado": tipo != PIRATA,
+                "confirmado": not (tipo == PIRATA or alertar),
             }
             if tipo == PIRATA:
                 self._copiar_pirata(nome)
@@ -89,10 +89,10 @@ class ArquivoRecompensas:
 
     def alerta_pendente(self) -> dict | None:
         with self._trava:
-            for item in reversed(self._itens):
-                if item["tipo"] == PIRATA and not item.get("confirmado"):
-                    return dict(item)
-        return None
+            pendentes = [i for i in reversed(self._itens) if not i.get("confirmado")]
+            # O Acesso à Loja Pirata tem preferência sobre alertas de recompensa não identificada.
+            pendentes.sort(key=lambda i: i["tipo"] != PIRATA)
+            return dict(pendentes[0]) if pendentes else None
 
     def confirmar_alertas(self) -> None:
         with self._trava:

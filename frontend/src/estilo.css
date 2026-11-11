@@ -327,6 +327,8 @@ input[type="number"] { font-family: var(--mono); font-variant-numeric: tabular-n
   animation: brilho 1.8s ease-in-out infinite;
 }
 @keyframes brilho { 50% { filter: brightness(1.22); } }
+.alerta-pirata.incerto { background: rgba(6, 9, 12, 0.94); animation: none; }
+.alerta-pirata.incerto .alerta-caixa { box-shadow: none; border-color: var(--ambar); background: var(--painel); }
 .alerta-caixa {
   width: min(760px, 100%); text-align: center; padding: 28px 32px; border-radius: 16px;
   border: 2px solid var(--ouro); background: rgba(12, 9, 2, 0.88);

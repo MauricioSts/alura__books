@@ -54,6 +54,10 @@ export default function Automacao() {
             Continuar farmando
           </button>
         </div>
+        <div style={{ marginTop: 12 }}>
+          <Chave ligado={a.alertar_nao_identificada} aoMudar={(v) => definir("automacao.alertar_nao_identificada", v)}
+            rotulo="Alertar com som quando aparecer uma recompensa sem template (pode ser o Acesso à Loja Pirata)" />
+        </div>
       </Secao>
 
       <Secao titulo="Salto e pouso" nota="O bot espera um tempo aleatório para saltar no trecho final da rota, vira a câmera para um lado e plana para longe do ônibus.">

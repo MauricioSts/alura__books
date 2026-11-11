@@ -55,6 +55,8 @@ O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele 
 - Sempre que um botão Resgatar, a tela de tesouro, o aviso "Você encontrou" ou a tela dourada de acesso aparecer, o print é salvo **antes** de qualquer clique e outro é salvo depois.
 - O tipo é identificado pelos templates de recompensa. Sem template correspondente, o registro fica como "não identificada" e o print é salvo do mesmo jeito.
 - Cada captura aparece na hora no feed do Painel e fica na galeria do Histórico, com tipo, data, hora e número da partida. Os arquivos ficam em `capturas/`.
+- **Como o token aparece de verdade**: não é uma tela com botão. É uma faixa dourada no meio da tela, durante a partida, com "VOCÊ ENCONTROU" em cima e "ACESSO À LOJA PIRATA" embaixo, que some sozinha em poucos segundos. O app trata isso com dois recortes: `aviso_encontrou` (só o texto "VOCÊ ENCONTROU", igual para qualquer recompensa) e `acesso_pirata` (só o texto "ACESSO À LOJA PIRATA").
+- **O problema do primeiro token**: você só consegue recortar `acesso_pirata` na sua resolução depois de vê-lo uma vez. Por isso, enquanto esse template não existir, o caminho é: recorte `aviso_encontrou` na primeira recompensa comum que aparecer e deixe ligado "Alertar quando aparecer uma recompensa sem template" (Automação, ligado por padrão). Toda recompensa que nenhum template reconhecer toca o alarme e mostra o print para você conferir; o bot continua rodando. Conforme você recorta os tipos comuns (gizmo, tela de carregamento, faixa, picareta), o alarme passa a tocar só para o que é raro.
 - **Acesso à Loja Pirata**: alerta em tela cheia que só some quando você fecha, som em loop até você confirmar, destaque permanente no topo do Painel e do Histórico e cópia extra dos prints em `capturas/acesso_pirata/`. Lembre-se: **o token precisa ser ativado na loja até 15/12/2026**. Depois dele, o app para tudo (padrão) ou continua farmando, conforme a tela Automação.
 
 ## Instalação
@@ -159,6 +161,8 @@ Tudo é gravado em `config.json`, na raiz, e pode ser editado pela interface ou 
 | A câmera vira muito ou pouco no salto | Ajuste "Pixels de mouse por grau" em Automação até 90° virar 90° na sua sensibilidade. |
 | O bot é ejetado do ônibus antes de saltar | A rota era curta. Diminua os atrasos do salto. |
 | Expulso por inatividade | Diminua a duração do Esconder e o intervalo de input ao espectar; confira o log para ver se o app estava pausado por falta de foco. |
+| O aviso "Você encontrou" passou e não foi capturado | O aviso dura poucos segundos. Diminua o intervalo de checagem (por exemplo 0,8 s) e confira o recorte de `aviso_encontrou`: só o texto, sem o cenário em volta. |
+| O alarme toca a cada recompensa comum | É o alerta de recompensa sem template. Recorte o template daquele tipo, ou desligue o alerta em Automação (aí o token só é reconhecido se `acesso_pirata` já estiver recortado). |
 | O contador de tesouros parece alto | Se a tela de resgate tem fundo animado e o clique demora a fechar, a mesma tela pode ser contada mais de uma vez. Os prints mostram o que realmente aconteceu. |
 | F8 não funciona | Veja o log ao abrir o app. Outro programa pode estar usando o F8; use o botão da interface. |
 | Porta em uso | Mude `porta` no `config.json`. |
@@ -186,7 +190,8 @@ Logs ficam em `logs/`, um arquivo por dia.
 - **Perda de foco**: o app solta as teclas que estavam pressionadas (para não ficarem presas no Windows) e não envia mais nada.
 - **Saída pelo ESC**: se Sair ou Confirmar não aparecer em 4 ciclos, o app fecha o menu e tenta de novo depois de 60 s. Sem os dois templates, ele nem abre o menu.
 - **Tela de resgate travada**: se a tela continua praticamente idêntica depois do clique, o app clica de novo sem contar outro tesouro.
-- **Tela dourada sem botão**: é registrada uma vez; com "parar tudo" ligado, o app para e deixa a tela aberta para você.
+- **Aviso do token sem botão**: é registrado uma vez; com "parar tudo" ligado, o app para ali mesmo, no meio da partida, e solta as teclas.
+- **Recompensa sem template** dispara alarme por padrão (sem parar o bot), porque o template do token não pode ser recortado antes de ele aparecer.
 - **Agachar** é tratado como alternado por padrão (um toque agacha), configurável.
 - **Templates extras** além dos 12: `fechar`, `tesouro_encontrado`, `aviso_encontrou` e os sete tipos de recompensa, todos opcionais.
 - **Modo Ensaio** foi acrescentado além da Simulação pedida.

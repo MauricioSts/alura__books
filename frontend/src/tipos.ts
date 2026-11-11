@@ -76,6 +76,7 @@ export interface Config {
     ciclos_sozinho: number;
     tempo_fila_max_s: number;
     apos_acesso_pirata: "parar" | "continuar";
+    alertar_nao_identificada: boolean;
   };
   salto: {
     atraso_min_s: number;

@@ -30,11 +30,11 @@ PRINCIPAIS = [
 EXTRAS = [
     InfoTemplate("fechar", "extra", "Botão Fechar", "Botão FECHAR de pop-ups."),
     InfoTemplate("tesouro_encontrado", "extra", "Tela Tesouro encontrado", "Título da tela de tesouro. Serve para salvar o print mesmo sem botão visível."),
-    InfoTemplate("aviso_encontrou", "extra", "Aviso Você encontrou", "Trecho fixo do aviso que aparece durante a partida."),
+    InfoTemplate("aviso_encontrou", "extra", "Aviso Você encontrou", "Só o texto VOCÊ ENCONTROU do aviso que surge no meio da tela durante a partida. É igual para qualquer recompensa, então dá para recortar no primeiro gizmo."),
 ]
 
 RECOMPENSAS = [
-    InfoTemplate("acesso_pirata", "recompensa", "Acesso à Loja Pirata", "Trecho da tela dourada de acesso desbloqueado. A mais importante."),
+    InfoTemplate("acesso_pirata", "recompensa", "Acesso à Loja Pirata", "Só o texto ACESSO À LOJA PIRATA do aviso dourado \"Você encontrou\". A mais importante; só dá para recortar depois de ver uma vez."),
     InfoTemplate("traje_dourado", "recompensa", "Traje Dourado Semanal", "Trecho que identifique o traje dourado."),
     InfoTemplate("veiculo", "recompensa", "Veículo e Decalque Semanal", "Trecho que identifique o veículo ou decalque."),
     InfoTemplate("picareta_costas", "recompensa", "Picareta ou Acessório para as Costas", "Trecho que identifique a picareta ou o acessório."),
