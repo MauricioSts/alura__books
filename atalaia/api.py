@@ -217,7 +217,9 @@ def criar_app(base: Path, armazem: ArmazemConfig | None = None,
 
     # ------------------------------------------------------------------ detecção
     @app.post("/api/deteccao/testar")
-    async def testar_deteccao():
+    async def testar_deteccao(atraso: float = 0.0):
+        # O atraso dá tempo de trocar para a janela do jogo antes da captura.
+        await asyncio.sleep(max(0.0, min(atraso, 15.0)))
         try:
             return await asyncio.to_thread(motor.testar_deteccao)
         except Exception as erro:

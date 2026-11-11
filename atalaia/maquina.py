@@ -84,6 +84,8 @@ class Maquina:
         self._saida_passo = 0
         self._saida_tentativas = 0
         self._saida_bloqueada_ate = -1e9
+        # Só há movimento depois de um ciclo que viu a tela livre de botões e telas de recompensa.
+        self._tela_livre = False
         self._aviso_ativo = False
         self._cinza_recompensa = None
         self._depois_pendente: str | None = None
@@ -121,6 +123,7 @@ class Maquina:
         if agora - self._ultimo_clique < self.cfg.automacao.cooldown_clique_s:
             return False
         self._interromper()
+        self._tela_livre = False
         self.entrada.clicar(achado.x, achado.y)
         self._ultimo_clique = agora
         self.log.info(f"Clique em {descricao} ({achado.x}, {achado.y}), score {achado.score:.2f}.")
@@ -157,6 +160,7 @@ class Maquina:
     # ------------------------------------------------------------------ ciclo principal
     def tick(self, quadro: Quadro, agora: float) -> None:
         """Um ciclo completo: olha a tela e age conforme a prioridade."""
+        self._tela_livre = False
         if not self._checar_foco():
             return
         prep = self.detector.preparar(quadro)
@@ -199,6 +203,7 @@ class Maquina:
                 self._iniciar_saida(agora, "tempo máximo de partida atingido")
                 return
             self._checar_sozinho(prep, agora)
+        self._tela_livre = self.fase != Fase.SAINDO
 
     def animar(self, agora: float) -> None:
         """Chamado várias vezes por segundo, entre os ciclos: executa salto e movimento."""
@@ -216,6 +221,8 @@ class Maquina:
                 self.entrada.tecla_cima("w")
                 self.fase = Fase.EM_PARTIDA
                 self.log.info("Fim do planeio: iniciando movimentação em partida.")
+        elif not self._tela_livre:
+            return  # há um botão ou tela na frente: nada de movimento por cima da interface
         elif self.fase == Fase.EM_PARTIDA:
             novo = self.movimento.passo(agora)
             if novo:

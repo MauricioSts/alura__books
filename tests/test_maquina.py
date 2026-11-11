@@ -20,6 +20,7 @@ def entrar_em_partida(b: Banco):
     b.animar(b.cfg.salto.atraso_max_s + 1)
     b.animar(b.cfg.salto.tempo_planando_s + 1)
     assert b.maquina.fase == Fase.EM_PARTIDA
+    b.tick()  # um ciclo com a tela livre libera o movimento
     b.maquina.movimento.abandonar()
     b.entrada.soltar_tudo()
     b.entrada.acoes.clear()
@@ -433,3 +434,17 @@ def test_duas_recompensas_seguidas_diferentes_contam_duas(banco):
     banco.tick("resgatar", "faixa", dt=3)
     assert banco.maquina.por_tipo == {"gizmo": 1, "faixa": 1}
     assert banco.recompensas.listar()[0]["depois"]
+
+
+def test_nao_se_move_por_cima_de_tela_de_recompensa_ou_de_fim(banco):
+    entrar_em_partida(banco)
+    banco.tick("resgatar", "gizmo")
+    banco.entrada.acoes.clear()
+    banco.animar(10)  # logo após o clique, sem novo ciclo: nada de movimento
+    assert banco.entrada.acoes == []
+    banco.tick("fim_partida", dt=0.1)  # tela de fim sem botão reconhecido
+    banco.animar(10)
+    assert banco.entrada.acoes == []
+    banco.tick()
+    banco.animar(10)
+    assert banco.entrada.acoes != []
