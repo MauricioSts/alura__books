@@ -1,8 +1,8 @@
-# Atalaia
+# Where's the Duck
 
 > **Aviso importante, leia antes de usar.** Automatizar o jogo **viola os termos de serviço da Epic Games** e pode resultar em **banimento permanente da conta**, sem aviso e sem recurso. Este app não tenta esconder nada do anti-cheat e não oferece nenhuma proteção contra isso. Se decidir usar, **use uma conta secundária** que você aceite perder. Além disso, um bot parado numa partida de Esquadrão ocupa a vaga de um jogador de verdade no time de outras pessoas. O uso é por sua conta e risco.
 
-Atalaia é um aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em Battle Royale ou Zero Build, em **Esquadrão + Preencher**, durante o evento de caça ao tesouro. Ele entra na partida, evita a expulsão por inatividade, fica assistindo enquanto houver companheiro vivo, clica em **Resgatar** quando a tela de tesouro aparece, salva os prints e puxa outra partida quando não faz mais sentido ficar.
+Where's the Duck é um aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em Battle Royale ou Zero Build, em **Esquadrão + Preencher**, durante o evento de caça ao tesouro. Ele entra na partida, evita a expulsão por inatividade, fica assistindo enquanto houver companheiro vivo, clica em **Resgatar** quando a tela de tesouro aparece, salva os prints e puxa outra partida quando não faz mais sentido ficar.
 
 Ele faz isso do jeito mais simples possível: tira prints da tela, procura recortes de botões que você mesmo fez (template matching do OpenCV) e simula teclado e mouse. Não lê memória do jogo, não injeta nada, não usa driver.
 
@@ -75,10 +75,10 @@ Manual, se preferir:
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 cd frontend && npm install && npm run build && cd ..
-.venv\Scripts\python -m atalaia
+.venv\Scripts\python -m wheres_the_duck
 ```
 
-`python -m atalaia --navegador` abre a interface no navegador padrão em vez da janela nativa.
+`python -m wheres_the_duck --navegador` abre a interface no navegador padrão em vez da janela nativa.
 
 ## Configurando o jogo
 
@@ -124,7 +124,7 @@ Atenção ao `fim_partida`: o botão Retornar ao lobby também aparece enquanto 
 ## Como rodar
 
 1. Abra o Fortnite e fique no lobby, com o modo já escolhido.
-2. Abra o Atalaia e confira a tela Templates.
+2. Abra o Where's the Duck e confira a tela Templates.
 3. Clique em **Iniciar** ou aperte **F8** e volte para o jogo. O app só age com a janela do jogo em foco.
 4. **F8 para tudo e solta todas as teclas**, a qualquer momento.
 
@@ -176,7 +176,7 @@ Logs ficam em `logs/`, um arquivo por dia.
 
 ## Decisões tomadas durante o desenvolvimento
 
-- **Nome e identidade**: "Atalaia" (torre de vigia). Paleta de casco escuro, latão e verde-mar; tipografia do próprio Windows (Bahnschrift, Segoe UI, Cascadia Mono), sem baixar fontes.
+- **Nome e identidade**: "Where's the Duck", nome escolhido por você, com um pato como ícone. O nome é só o nome: não esconde nada do anti-cheat. Paleta de casco escuro, latão e verde-mar; tipografia do próprio Windows (Bahnschrift, Segoe UI, Cascadia Mono), sem baixar fontes.
 - **Prioridade do ônibus**: a regra "apertar espaço ao ver o aviso" foi substituída pelo salto atrasado da seção Salto e pouso.
 - **Fim de partida** só é reconhecido pelo template `fim_partida`, porque Retornar ao lobby também aparece no modo espectador.
 - **Movimento só com evidência de partida**: o bot só se move depois de ele mesmo ter clicado em Jogar ou de ver o aviso do ônibus. Se você iniciar o app no meio de uma partida, ele espera o próximo lobby. Isso evita teclas e cliques soltos em menus.

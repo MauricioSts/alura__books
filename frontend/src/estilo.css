@@ -1,4 +1,4 @@
-/* Atalaia — identidade própria: casco escuro, latão e verde-mar. Só fontes do sistema. */
+/* Where's the Duck — identidade própria: casco escuro, latão e verde-mar. Só fontes do sistema. */
 :root {
   --fundo: #0c1116;
   --painel: #131a21;
@@ -53,8 +53,9 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; font-variant-numeric:
   display: flex; flex-direction: column; gap: 24px; padding: 20px 14px;
   background: var(--painel); border-right: 1px solid var(--borda);
 }
-.marca { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
-.marca strong { display: block; font: 600 20px/1 var(--titulo); letter-spacing: 0.06em; text-transform: uppercase; }
+.marca { display: flex; align-items: center; gap: 9px; padding: 0 4px; }
+.marca svg { flex: none; }
+.marca strong { display: block; font: 600 14px/1.1 var(--titulo); letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
 .marca span { color: var(--mudo); font-size: 11.5px; }
 .lateral nav { display: flex; flex-direction: column; gap: 2px; }
 .lateral nav button {

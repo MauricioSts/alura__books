@@ -4,10 +4,10 @@ import cv2
 import pytest
 from fastapi.testclient import TestClient
 
-from atalaia.api import criar_app
-from atalaia.config import ArmazemConfig, Config
-from atalaia.motor import Motor
-from atalaia.registro import Registro
+from wheres_the_duck.api import criar_app
+from wheres_the_duck.config import ArmazemConfig, Config
+from wheres_the_duck.motor import Motor
+from wheres_the_duck.registro import Registro
 from tests.conftest import Cena, padrao
 
 

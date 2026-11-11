@@ -18,18 +18,22 @@ const MODOS = [
 ];
 
 export default function Painel({ estado, log, recompensas, irPara }: Props) {
-  const [modo, setModo] = useState(() => localStorage.getItem("atalaia.modo") ?? "real");
-  const [pasta, setPasta] = useState(() => localStorage.getItem("atalaia.pasta") ?? "");
+  const [modo, setModo] = useState(() => localStorage.getItem("wheres_the_duck.modo") ?? "real");
+  const [pasta, setPasta] = useState(() => localStorage.getItem("wheres_the_duck.pasta") ?? "");
   const [repetir, setRepetir] = useState(2);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
-  const fimLog = useRef<HTMLDivElement>(null);
+  const caixaLog = useRef<HTMLDivElement>(null);
   const fase = estado.rodando && estado.pausado ? "pausado" : estado.fase;
 
-  useEffect(() => { localStorage.setItem("atalaia.modo", modo); }, [modo]);
-  useEffect(() => { localStorage.setItem("atalaia.pasta", pasta); }, [pasta]);
-  useEffect(() => { fimLog.current?.scrollIntoView({ block: "nearest" }); }, [log.length]);
+  useEffect(() => { localStorage.setItem("wheres_the_duck.modo", modo); }, [modo]);
+  useEffect(() => { localStorage.setItem("wheres_the_duck.pasta", pasta); }, [pasta]);
+  // Rola só a caixa do log (scrollIntoView arrastaria a página inteira junto).
+  useEffect(() => {
+    const caixa = caixaLog.current;
+    if (caixa) caixa.scrollTop = caixa.scrollHeight;
+  }, [log.length]);
 
   const alternar = async () => {
     setErro("");
@@ -148,7 +152,7 @@ export default function Painel({ estado, log, recompensas, irPara }: Props) {
         </section>
         <section className="secao">
           <h2>Log ao vivo</h2>
-          <div className="log">
+          <div className="log" ref={caixaLog}>
             {log.length === 0 && <p className="vazio">Sem eventos por enquanto.</p>}
             {log.map((l, i) => (
               <div key={i} className={`linha ${l.nivel}`}>
@@ -156,7 +160,6 @@ export default function Painel({ estado, log, recompensas, irPara }: Props) {
                 <span>{l.msg}</span>
               </div>
             ))}
-            <div ref={fimLog} />
           </div>
         </section>
       </div>

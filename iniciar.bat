@@ -1,5 +1,5 @@
 @echo off
-rem Atalaia - sobe tudo no Windows: ambiente Python, build do frontend e o app.
+rem Where's the Duck - sobe tudo no Windows: ambiente Python, build do frontend e o app.
 setlocal
 cd /d "%~dp0"
 
@@ -22,7 +22,7 @@ if not exist "frontend\dist\index.html" (
   popd
 )
 
-echo Abrindo o Atalaia...
-".venv\Scripts\python.exe" -m atalaia %*
+echo Abrindo o Where's the Duck...
+".venv\Scripts\python.exe" -m wheres_the_duck %*
 if errorlevel 1 pause
 endlocal

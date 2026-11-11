@@ -1,4 +1,4 @@
-# Atalaia
+# Where's the Duck
 
 Aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em partidas de Esquadrão + Preencher: lê a tela, reconhece recortes de botões (template matching) e simula teclado e mouse. Interface, logs e comentários em português do Brasil.
 
@@ -6,13 +6,13 @@ Aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em partidas
 
 - Testes: `python -m pytest -q` (não precisa de Windows nem do jogo)
 - Build da interface: `cd frontend && npm install && npm run build`
-- Rodar: `iniciar.bat` no Windows, ou `python -m atalaia` (`--navegador` abre no navegador em vez da janela nativa)
+- Rodar: `iniciar.bat` no Windows, ou `python -m wheres_the_duck` (`--navegador` abre no navegador em vez da janela nativa)
 - Frontend em desenvolvimento: `cd frontend && npm run dev` com o backend rodando na porta 8765
 
 ## Arquitetura
 
 ```
-atalaia/
+wheres_the_duck/
   config.py          modelos pydantic com os padrões; lê e grava config.json
   catalogo.py        lista dos templates conhecidos (12 principais, extras, tipos de recompensa)
   registro.py        log em memória, arquivo diário e ouvintes

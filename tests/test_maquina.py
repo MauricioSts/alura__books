@@ -2,10 +2,10 @@ import random
 
 import pytest
 
-from atalaia.comportamentos import GerenciadorMovimento
-from atalaia.config import Movimento
-from atalaia.entrada import EntradaSimulada
-from atalaia.maquina import Fase
+from wheres_the_duck.comportamentos import GerenciadorMovimento
+from wheres_the_duck.config import Movimento
+from wheres_the_duck.entrada import EntradaSimulada
+from wheres_the_duck.maquina import Fase
 from tests.conftest import Banco
 
 

@@ -11,15 +11,15 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from atalaia import catalogo  # noqa: E402
-from atalaia.captura import Quadro  # noqa: E402
-from atalaia.config import Config  # noqa: E402
-from atalaia.deteccao import Detector  # noqa: E402
-from atalaia.entrada import EntradaSimulada  # noqa: E402
-from atalaia.foco import FocoSimulado  # noqa: E402
-from atalaia.maquina import Maquina  # noqa: E402
-from atalaia.recompensas import ArquivoRecompensas  # noqa: E402
-from atalaia.registro import Registro  # noqa: E402
+from wheres_the_duck import catalogo  # noqa: E402
+from wheres_the_duck.captura import Quadro  # noqa: E402
+from wheres_the_duck.config import Config  # noqa: E402
+from wheres_the_duck.deteccao import Detector  # noqa: E402
+from wheres_the_duck.entrada import EntradaSimulada  # noqa: E402
+from wheres_the_duck.foco import FocoSimulado  # noqa: E402
+from wheres_the_duck.maquina import Maquina  # noqa: E402
+from wheres_the_duck.recompensas import ArquivoRecompensas  # noqa: E402
+from wheres_the_duck.registro import Registro  # noqa: E402
 
 LARGURA, ALTURA = 1280, 720
 

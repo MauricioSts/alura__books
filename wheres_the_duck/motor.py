@@ -122,7 +122,7 @@ class Motor:
             if faltando:
                 self.log.aviso("Templates principais ausentes (estados ignorados): " + ", ".join(faltando))
             self._thread = threading.Thread(target=self._laco, args=(capturador,), daemon=True,
-                                            name="atalaia-motor")
+                                            name="wheres_the_duck-motor")
             self._thread.start()
         self.publicar_estado()
 

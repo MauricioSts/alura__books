@@ -57,7 +57,7 @@ def main() -> None:
     url = f"http://{ENDERECO}:{porta}"
 
     servidor = uvicorn.Server(uvicorn.Config(app, host=ENDERECO, port=porta, log_level="warning"))
-    thread = threading.Thread(target=servidor.run, daemon=True, name="atalaia-api")
+    thread = threading.Thread(target=servidor.run, daemon=True, name="wheres_the_duck-api")
     thread.start()
     if not _esperar_porta(porta):
         raise SystemExit(f"A API não subiu na porta {porta}. Ela está em uso? Mude 'porta' no config.json.")

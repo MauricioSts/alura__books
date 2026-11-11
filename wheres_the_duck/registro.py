@@ -30,7 +30,7 @@ class Registro:
             if self.pasta:
                 try:
                     self.pasta.mkdir(parents=True, exist_ok=True)
-                    arq = self.pasta / f"atalaia-{agora:%Y%m%d}.log"
+                    arq = self.pasta / f"wheres_the_duck-{agora:%Y%m%d}.log"
                     with arq.open("a", encoding="utf-8") as f:
                         f.write(f"{agora:%Y-%m-%d %H:%M:%S} [{nivel}] {msg}\n")
                 except OSError:

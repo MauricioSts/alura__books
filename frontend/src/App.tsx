@@ -21,9 +21,11 @@ type Aba = (typeof ABAS)[number]["id"];
 export function Marca() {
   return (
     <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
-      <path d="M16 5 L27 27 H5 Z" fill="none" stroke="var(--ambar)" strokeWidth="2.2" strokeLinejoin="round" />
-      <path d="M16 5 V13" stroke="var(--ambar)" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="16" cy="20" r="3.2" fill="var(--mar)" />
+      <ellipse cx="14" cy="21" rx="10" ry="6.5" fill="var(--ambar)" />
+      <circle cx="21" cy="11.5" r="5" fill="var(--ambar)" />
+      <path d="M25.5 10 L31 12 L25.5 14 Z" fill="var(--coral)" />
+      <circle cx="22" cy="10.5" r="1" fill="var(--fundo)" />
+      <path d="M8 21 Q13 25 18 21" fill="none" stroke="var(--fundo)" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -46,7 +48,7 @@ export default function App() {
         <div className="marca">
           <Marca />
           <div>
-            <strong>Atalaia</strong>
+            <strong>Where's the Duck</strong>
             <span>vigia de partidas</span>
           </div>
         </div>

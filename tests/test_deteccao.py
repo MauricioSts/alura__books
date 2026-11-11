@@ -1,7 +1,7 @@
 import numpy as np
 
-from atalaia.captura import Quadro
-from atalaia.deteccao import Detector
+from wheres_the_duck.captura import Quadro
+from wheres_the_duck.deteccao import Detector
 
 
 def test_localiza_e_converte_coordenadas_com_escala(cena):
