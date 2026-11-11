@@ -1,0 +1,210 @@
+# Atalaia
+
+> **Aviso importante, leia antes de usar.** Automatizar o jogo **viola os termos de serviço da Epic Games** e pode resultar em **banimento permanente da conta**, sem aviso e sem recurso. Este app não tenta esconder nada do anti-cheat e não oferece nenhuma proteção contra isso. Se decidir usar, **use uma conta secundária** que você aceite perder. Além disso, um bot parado numa partida de Esquadrão ocupa a vaga de um jogador de verdade no time de outras pessoas. O uso é por sua conta e risco.
+
+Atalaia é um aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em Battle Royale ou Zero Build, em **Esquadrão + Preencher**, durante o evento de caça ao tesouro. Ele entra na partida, evita a expulsão por inatividade, fica assistindo enquanto houver companheiro vivo, clica em **Resgatar** quando a tela de tesouro aparece, salva os prints e puxa outra partida quando não faz mais sentido ficar.
+
+Ele faz isso do jeito mais simples possível: tira prints da tela, procura recortes de botões que você mesmo fez (template matching do OpenCV) e simula teclado e mouse. Não lê memória do jogo, não injeta nada, não usa driver.
+
+## O que ele faz a cada ciclo (~1,5 s)
+
+Nesta ordem de prioridade:
+
+1. **Fortnite fora de foco**: pausa e não envia nenhum input.
+2. **Recompensa na tela**: salva um print, clica em Resgatar ou Resgatar tudo, conta o tesouro e salva outro print no ciclo seguinte.
+3. **Tela de fim** (esquadrão eliminado): clica em Jogar novamente; se não houver, em Retornar ao lobby.
+4. **Botão Jogar** do lobby: clica (cooldown de 15 s) e conta uma partida.
+5. **Pop-up** com Continuar ou Fechar: clica.
+6. **Aviso de pular do ônibus**: agenda o salto para o trecho final da rota.
+7. **Tempo máximo de partida** (0 = desligado): sai pelo menu ESC.
+8. **Sobrou só o bot vivo**: se o número de ícones de companheiro eliminado for igual ao número de companheiros, por 3 ciclos seguidos e sem estar espectando, sai pelo menu ESC (ESC, Sair, Confirmar).
+9. **Movimento anti-inatividade**, descrito abaixo.
+
+### Salto e pouso
+
+Quando o aviso do ônibus aparece, o bot espera um tempo aleatório entre o atraso mínimo e o máximo (padrão 28 a 40 s), salta, gira a câmera cerca de 90° para um lado sorteado e segura W, afastando-se da rota. Com "abrir planador cedo" ligado, aperta espaço de novo logo depois do salto. Continua segurando W pelo "tempo segurando W" (padrão 80 s), porque o app não enxerga o chão.
+
+### Movimentação em partida
+
+Comportamentos sorteados por peso, com duração variável, todos configuráveis na tela Automação:
+
+| Comportamento | O que faz |
+|---|---|
+| Esconder | Agacha e fica parado, com pequenos ajustes de câmera. Nunca passa de 80% do limite de inatividade. |
+| Reposicionar | Vira, corre (Shift+W) alguns segundos e para. |
+| Rondar | Anda agachado em trajetos curtos, mudando de direção. |
+| Coletar | Seleciona a picareta e bate no que estiver à frente. |
+| Olhar em volta | Giro lento de câmera, sem andar. |
+
+O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele reduz o input a um pequeno movimento de mouse de tempos em tempos.
+
+**O bot não foge da tempestade.** Ele não enxerga o mapa. Em algum momento ele vai morrer para a tempestade ou para outro jogador e seguir espectando os companheiros. Isso é esperado: o objetivo é só continuar na partida enquanto o esquadrão abre baús.
+
+### Recompensas
+
+| Recompensa | Chance por baú |
+|---|---|
+| Traje Dourado Semanal | 1 em 1.562.500 |
+| **Acesso à Loja Pirata** | **1 em 137.500** |
+| Veículo e Decalque Semanal | 1 em 7.813 |
+| Picareta ou Acessório para as Costas Semanal | 1 em 568 |
+| Faixa de Improviso Semanal | 1 em 391 |
+| Tela de Carregamento Semanal | 1 em 272 |
+| Gizmo (cinco tipos, o único que repete) | 1 em 127 |
+
+- Sempre que um botão Resgatar, a tela de tesouro, o aviso "Você encontrou" ou a tela dourada de acesso aparecer, o print é salvo **antes** de qualquer clique e outro é salvo depois.
+- O tipo é identificado pelos templates de recompensa. Sem template correspondente, o registro fica como "não identificada" e o print é salvo do mesmo jeito.
+- Cada captura aparece na hora no feed do Painel e fica na galeria do Histórico, com tipo, data, hora e número da partida. Os arquivos ficam em `capturas/`.
+- **Acesso à Loja Pirata**: alerta em tela cheia que só some quando você fecha, som em loop até você confirmar, destaque permanente no topo do Painel e do Histórico e cópia extra dos prints em `capturas/acesso_pirata/`. Lembre-se: **o token precisa ser ativado na loja até 15/12/2026**. Depois dele, o app para tudo (padrão) ou continua farmando, conforme a tela Automação.
+
+## Instalação
+
+Requisitos: Windows 10 ou 11, [Python 3.11+](https://www.python.org/downloads/) (marque "Add python.exe to PATH") e [Node.js 18+](https://nodejs.org/) (só para compilar a interface na primeira vez).
+
+```
+git clone <endereço deste repositório>
+cd <pasta>
+iniciar.bat
+```
+
+O `iniciar.bat` cria o ambiente virtual, instala as dependências, compila a interface se ainda não existir e abre o app. Nas próximas vezes, é só rodar o mesmo arquivo.
+
+Manual, se preferir:
+
+```
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+cd frontend && npm install && npm run build && cd ..
+.venv\Scripts\python -m atalaia
+```
+
+`python -m atalaia --navegador` abre a interface no navegador padrão em vez da janela nativa.
+
+## Configurando o jogo
+
+- Modo de janela: **Tela cheia em janela** (sem borda). Em tela cheia exclusiva a captura pode vir preta.
+- Jogue no **monitor principal**.
+- Deixe o modo Esquadrão com **Preencher** ligado, e não mude resolução nem idioma depois de recortar os templates.
+- Teclas no padrão: W/A/S/D, Espaço, Shift para correr, Ctrl para agachar, F para a picareta. Se as suas forem outras, ajuste em Automação.
+
+## Como recortar cada template
+
+Os templates são PNGs recortados **por você**, na **sua** resolução e no **seu** idioma. Eles ficam em `templates/` e não vão para o git.
+
+Na tela **Templates**, clique em **Recortar da tela**, depois em **Capturar tela em 5 s**, troque para o jogo e espere. De volta ao app, arraste um retângulo sobre o elemento e salve. Também dá para enviar um PNG pronto.
+
+Regras para um bom recorte:
+
+- Recorte **justo**: o texto do botão e um pouco do fundo dele. Nada de fundo animado, contadores, nomes de jogador ou qualquer coisa que mude.
+- Evite recortes minúsculos (menos de ~20 px) e áreas de cor chapada.
+- Capture com o botão no estado normal, sem o mouse em cima.
+- Depois de recortar, use **Detecção → Testar detecção agora** com aquela tela aberta: o score deve ficar bem acima do limiar (0,82) e os outros templates, bem abaixo.
+
+| Template | O que recortar | Onde aparece |
+|---|---|---|
+| `jogar` | O texto do botão JOGAR | Lobby |
+| `resgatar` | O botão RESGATAR | Tela de tesouro |
+| `resgatar_tudo` | O botão RESGATAR TUDO | Tela de tesouro com vários itens |
+| `fim_partida` | Um trecho fixo que só existe na tela final, quando o esquadrão todo caiu (por exemplo, o rótulo da colocação) | Fim de partida |
+| `jogar_novamente` | O botão JOGAR NOVAMENTE | Fim de partida |
+| `retornar_lobby` | O botão RETORNAR AO LOBBY | Fim de partida |
+| `continuar` | O botão CONTINUAR | Pop-ups |
+| `pular_onibus` | O aviso da tecla de saltar | Ônibus, depois que as portas abrem |
+| `sair_partida` | A opção de sair da partida | Menu ESC |
+| `confirmar_sair` | O botão que confirma a saída | Menu ESC |
+| `companheiro_morto` | Só o ícone de eliminado ao lado do nome de um companheiro, bem justo | Lista da squad |
+| `espectando` | Um trecho fixo do HUD de espectador | Depois de morrer, assistindo |
+
+Opcionais: `fechar` (pop-ups), `tesouro_encontrado` e `aviso_encontrou` (para salvar print mesmo sem botão) e os sete tipos de recompensa (`acesso_pirata`, `traje_dourado`, `veiculo`, `picareta_costas`, `faixa`, `tela_carregamento`, `gizmo`). Para os tipos de recompensa você só consegue recortar depois de ver cada tela ao menos uma vez; os prints salvos como "não identificada" servem de fonte.
+
+**Template ausente nunca quebra o app**: o estado correspondente é simplesmente ignorado. O mínimo útil é `jogar`, `resgatar`, `fim_partida`, `retornar_lobby` e `pular_onibus`.
+
+Atenção ao `fim_partida`: o botão Retornar ao lobby também aparece enquanto você assiste a um companheiro. Por isso o app só trata como fim de partida quando o template `fim_partida` está na tela. Escolha um trecho que **não** apareça durante o modo espectador.
+
+## Como rodar
+
+1. Abra o Fortnite e fique no lobby, com o modo já escolhido.
+2. Abra o Atalaia e confira a tela Templates.
+3. Clique em **Iniciar** ou aperte **F8** e volte para o jogo. O app só age com a janela do jogo em foco.
+4. **F8 para tudo e solta todas as teclas**, a qualquer momento.
+
+Modos do botão Iniciar:
+
+- **Real**: captura a tela e envia teclado e mouse. É o que o F8 usa.
+- **Ensaio**: captura a tela de verdade, mas só escreve no log o que faria. Bom para validar os templates com o jogo aberto, sem risco de input errado.
+- **Simulação**: roda a máquina de estados sobre uma pasta de screenshots (em ordem alfabética), com relógio acelerado e sem input. "Ciclos por imagem" define por quantos ciclos cada screenshot fica na tela.
+
+### Telas
+
+- **Painel**: estado atual, Iniciar/Parar, indicador de foco, contadores, recompensas por tipo, feed de recompensas e log ao vivo.
+- **Automação**: tempos, saída quando sozinho, salto, comportamentos e o que fazer depois do Acesso à Loja Pirata.
+- **Detecção**: limiar, escala, região da squad e o teste de detecção.
+- **Templates**: status, preview, upload e recorte de cada template.
+- **Histórico**: sessões anteriores e galeria de prints.
+
+Tudo é gravado em `config.json`, na raiz, e pode ser editado pela interface ou à mão (com o app fechado). Alterações feitas com o bot rodando valem a partir do próximo Iniciar.
+
+## Solução de problemas
+
+| Sintoma | O que verificar |
+|---|---|
+| "Fortnite fora de foco" mesmo com o jogo aberto | O título da janela precisa conter o texto de Detecção → Título da janela do jogo (padrão `Fortnite`). Clique na janela do jogo. |
+| O app vê os botões, mas os cliques e teclas não chegam ao jogo | Se o jogo ou o launcher roda como administrador, o Windows bloqueia input vindo de um programa sem a mesma permissão. Rode o `iniciar.bat` como administrador. |
+| Clique cai deslocado | Jogue no monitor principal, em tela cheia em janela. Confira a escala do Windows; o app já ativa DPI awareness, mas recorte os templates de novo se mudou a escala. |
+| Nada é detectado | Rode Detecção → Testar detecção agora com a tela certa aberta. Score baixo: refaça o recorte, mais justo. Se mudou resolução, idioma ou escala de HUD, todos os templates precisam ser refeitos. |
+| Detecta coisa que não está na tela | Suba o limiar (0,85 a 0,90) ou refaça o recorte com mais detalhe. |
+| Captura preta | Troque tela cheia exclusiva por tela cheia em janela. |
+| O bot sai da partida com companheiros vivos | O template `companheiro_morto` está casando com outra coisa. Recorte mais justo, confira a região da squad e o número de companheiros. |
+| O bot nunca sai quando fica sozinho | Faltam `companheiro_morto`, `sair_partida` ou `confirmar_sair`, ou o Preencher completou menos de 3 companheiros (ajuste o número em Automação). |
+| A câmera vira muito ou pouco no salto | Ajuste "Pixels de mouse por grau" em Automação até 90° virar 90° na sua sensibilidade. |
+| O bot é ejetado do ônibus antes de saltar | A rota era curta. Diminua os atrasos do salto. |
+| Expulso por inatividade | Diminua a duração do Esconder e o intervalo de input ao espectar; confira o log para ver se o app estava pausado por falta de foco. |
+| O contador de tesouros parece alto | Se a tela de resgate tem fundo animado e o clique demora a fechar, a mesma tela pode ser contada mais de uma vez. Os prints mostram o que realmente aconteceu. |
+| F8 não funciona | Veja o log ao abrir o app. Outro programa pode estar usando o F8; use o botão da interface. |
+| Porta em uso | Mude `porta` no `config.json`. |
+
+Logs ficam em `logs/`, um arquivo por dia.
+
+## Limites do app (de propósito)
+
+- Só usa o que um humano vê na tela e teclado/mouse comuns (SendInput, via pydirectinput).
+- Não burla, não engana e não se esconde do anti-cheat: sem driver, sem injeção de DLL, sem leitura ou escrita de memória, sem spoofing de hardware, sem ocultar processo ou janela, sem nenhuma técnica para evitar detecção. As variações aleatórias de tempo e movimento existem para o bot não ficar preso nem cair sempre no mesmo lugar, não para se disfarçar.
+- Nenhuma vantagem em combate: sem mira, sem leitura de inimigos.
+- Nunca envia input com o jogo fora de foco.
+- Nenhuma conexão externa, telemetria, login ou licença. A API escuta só em `127.0.0.1` e recusa requisições de outras origens. Fontes e sons são locais.
+- Não toca em credenciais, tokens nem arquivos da conta Epic.
+
+## Decisões tomadas durante o desenvolvimento
+
+- **Nome e identidade**: "Atalaia" (torre de vigia). Paleta de casco escuro, latão e verde-mar; tipografia do próprio Windows (Bahnschrift, Segoe UI, Cascadia Mono), sem baixar fontes.
+- **Prioridade do ônibus**: a regra "apertar espaço ao ver o aviso" foi substituída pelo salto atrasado da seção Salto e pouso.
+- **Fim de partida** só é reconhecido pelo template `fim_partida`, porque Retornar ao lobby também aparece no modo espectador.
+- **Movimento só com evidência de partida**: o bot só se move depois de ele mesmo ter clicado em Jogar ou de ver o aviso do ônibus. Se você iniciar o app no meio de uma partida, ele espera o próximo lobby. Isso evita teclas e cliques soltos em menus.
+- **Sem movimento por cima de interface**: depois de qualquer clique, ou enquanto houver botão ou tela reconhecida na frente, o movimento fica bloqueado até um ciclo ver a tela livre.
+- **Sem aviso do ônibus em 120 s** depois de clicar em Jogar, o app assume que a partida começou (cobre a falta do template `pular_onibus`).
+- **Contagem de partidas**: conta no clique em Jogar ou Jogar novamente; cliques repetidos na mesma fila não contam de novo.
+- **Perda de foco**: o app solta as teclas que estavam pressionadas (para não ficarem presas no Windows) e não envia mais nada.
+- **Saída pelo ESC**: se Sair ou Confirmar não aparecer em 4 ciclos, o app fecha o menu e tenta de novo depois de 60 s. Sem os dois templates, ele nem abre o menu.
+- **Tela de resgate travada**: se a tela continua praticamente idêntica depois do clique, o app clica de novo sem contar outro tesouro.
+- **Tela dourada sem botão**: é registrada uma vez; com "parar tudo" ligado, o app para e deixa a tela aberta para você.
+- **Agachar** é tratado como alternado por padrão (um toque agacha), configurável.
+- **Templates extras** além dos 12: `fechar`, `tesouro_encontrado`, `aviso_encontrou` e os sete tipos de recompensa, todos opcionais.
+- **Modo Ensaio** foi acrescentado além da Simulação pedida.
+- **`config.json` fica fora do git**: é criado com os padrões na primeira execução. Arquivo corrompido é renomeado para `config.invalido.json` e os padrões voltam.
+- **F8** alterna: parado inicia em modo real, rodando para tudo.
+
+## Desenvolvimento
+
+```
+pip install -r requirements-dev.txt
+python -m pytest -q
+cd frontend && npm run build
+```
+
+Os testes usam imagens sintéticas e as implementações dry-run de input e foco, então rodam em qualquer sistema. A arquitetura e as regras do projeto estão em [CLAUDE.md](CLAUDE.md).
+
+### O que os testes cobrem e o que só dá para validar com o jogo
+
+Coberto por testes automáticos: detecção (escala, offset do monitor, contagem sem sobreposição, templates ausentes ou inválidos), toda a ordem de prioridade da máquina de estados, salto atrasado, comportamentos de movimento, saída pelo ESC, captura e classificação de recompensas, fluxo do Acesso à Loja Pirata, modo simulação, API e WebSocket.
+
+Só dá para validar no seu PC, com o jogo aberto: se os seus recortes casam com as telas reais, se o pydirectinput entrega teclado e mouse ao jogo, a detecção de foco pelo título da janela, a captura em tela cheia em janela, os tempos reais do ônibus e do planeio, se o input mínimo ao espectar evita a expulsão, o atalho F8 global, a janela do pywebview e o som do alerta. Comece pelo modo Ensaio.
