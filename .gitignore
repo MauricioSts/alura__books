@@ -1,0 +1,21 @@
+# Dados do usuário (nunca vão para o repositório)
+templates/
+logs/
+capturas/
+dados/
+config.json
+config.invalido.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Frontend e builds
+node_modules/
+frontend/dist/
+build/
+dist/
+*.egg-info/
