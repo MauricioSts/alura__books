@@ -71,7 +71,8 @@ def _host_local(valor: str | None) -> bool:
 
 
 def criar_app(base: Path, armazem: ArmazemConfig | None = None,
-              registro: Registro | None = None) -> FastAPI:
+              registro: Registro | None = None, recursos: Path | None = None) -> FastAPI:
+    """`base` guarda os dados do usuário; `recursos` é onde está o frontend compilado."""
     base = Path(base)
     armazem = armazem or ArmazemConfig(base / "config.json")
     registro = registro or Registro(base / "logs")
@@ -268,7 +269,7 @@ def criar_app(base: Path, armazem: ArmazemConfig | None = None,
             await asyncio.gather(*tarefas, return_exceptions=True)
 
     # ------------------------------------------------------------------ frontend
-    dist = base / "frontend" / "dist"
+    dist = Path(recursos or base) / "frontend" / "dist"
     if dist.is_dir():
         app.mount("/", StaticFiles(directory=dist, html=True), name="frontend")
     else:

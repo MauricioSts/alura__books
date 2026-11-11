@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import socket
+import sys
 import threading
 import time
 import webbrowser
@@ -16,7 +17,12 @@ from .config import ArmazemConfig
 from .foco import ativar_dpi
 from .registro import Registro
 
-BASE = Path(__file__).resolve().parent.parent
+if getattr(sys, "frozen", False):
+    # Executável (PyInstaller): dados do usuário ao lado do .exe, interface embutida no pacote.
+    BASE = Path(sys.executable).resolve().parent
+    RECURSOS = Path(getattr(sys, "_MEIPASS", BASE))
+else:
+    BASE = RECURSOS = Path(__file__).resolve().parent.parent
 ENDERECO = "127.0.0.1"  # nunca 0.0.0.0: a API não deve ficar visível na rede
 
 
@@ -51,15 +57,18 @@ def main() -> None:
     ativar_dpi()
     armazem = ArmazemConfig(BASE / "config.json")
     registro = Registro(BASE / "logs")
-    app = criar_app(BASE, armazem, registro)
+    app = criar_app(BASE, armazem, registro, recursos=RECURSOS)
     motor = app.state.motor
     porta = args.porta or armazem.atual.porta
     url = f"http://{ENDERECO}:{porta}"
 
-    servidor = uvicorn.Server(uvicorn.Config(app, host=ENDERECO, port=porta, log_level="warning"))
+    servidor = uvicorn.Server(uvicorn.Config(
+        app, host=ENDERECO, port=porta, log_level="warning",
+        log_config=None))  # sem console (executável em janela) o log padrão do uvicorn quebra
     thread = threading.Thread(target=servidor.run, daemon=True, name="wheres_the_duck-api")
     thread.start()
     if not _esperar_porta(porta):
+        registro.erro(f"A API não subiu na porta {porta}.")
         raise SystemExit(f"A API não subiu na porta {porta}. Ela está em uso? Mude 'porta' no config.json.")
     _registrar_f8(motor, registro)
 

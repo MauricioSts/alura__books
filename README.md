@@ -82,6 +82,17 @@ cd frontend && npm install && npm run build && cd ..
 
 `python -m wheres_the_duck --navegador` abre a interface no navegador padrão em vez da janela nativa.
 
+### Executável (.exe), sem instalar Python nem Node
+
+Há duas formas de obter o `WheresTheDuck.exe`:
+
+- **Baixar do GitHub**: na aba **Actions** do repositório, abra a execução mais recente de "Executável para Windows" e baixe o artefato `WheresTheDuck-windows` (um .zip com o .exe dentro). É preciso estar logado no GitHub.
+- **Gerar no seu PC**: rode `compilar.bat`. O arquivo sai em `dist\WheresTheDuck.exe`.
+
+Coloque o .exe numa pasta só dele: `config.json`, `templates\`, `capturas\`, `dados\` e `logs\` são criados ao lado do executável. A janela usa o WebView2, que já vem no Windows 10/11 atualizado.
+
+O executável não é assinado. O Windows SmartScreen vai avisar na primeira vez ("Mais informações" → "Executar assim mesmo") e alguns antivírus desconfiam de executáveis feitos com PyInstaller. O app não faz nada para contornar isso; se preferir, use o `iniciar.bat`, que roda direto do código.
+
 ## Configurando o jogo
 
 - Modo de janela: **Tela cheia em janela** (sem borda). Em tela cheia exclusiva a captura pode vir preta.

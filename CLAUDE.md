@@ -7,6 +7,7 @@ Aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em partidas
 - Testes: `python -m pytest -q` (não precisa de Windows nem do jogo)
 - Build da interface: `cd frontend && npm install && npm run build`
 - Rodar: `iniciar.bat` no Windows, ou `python -m wheres_the_duck` (`--navegador` abre no navegador em vez da janela nativa)
+- Executável: `compilar.bat` (PyInstaller, entrada em `executar.py`); o workflow `.github/workflows/executavel.yml` gera o mesmo .exe como artefato. Congelado, os dados ficam ao lado do .exe e o frontend vem de `sys._MEIPASS`
 - Frontend em desenvolvimento: `cd frontend && npm run dev` com o backend rodando na porta 8765
 
 ## Arquitetura

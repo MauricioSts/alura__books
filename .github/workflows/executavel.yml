@@ -1,0 +1,49 @@
+name: Executável para Windows
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Interface
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Dependências Python
+        run: python -m pip install -r requirements-dev.txt pyinstaller
+
+      - name: Testes
+        run: python -m pytest -q
+
+      - name: Executável
+        run: >
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name WheresTheDuck
+          --add-data "frontend/dist;frontend/dist"
+          --collect-submodules uvicorn --collect-submodules websockets
+          executar.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WheresTheDuck-windows
+          path: dist/WheresTheDuck.exe
+          if-no-files-found: error
