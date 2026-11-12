@@ -69,6 +69,19 @@ REGIAO_SQUAD_PADRAO = (0.0, 0.55, 0.3, 0.45)
 REGIOES_SQUAD_ANTIGAS = ([0.0, 0.0, 0.28, 0.5], [0.6, 0.0, 0.3, 0.5])
 
 
+class Navegacao(BaseModel):
+    """Marcar o meio do mapa e seguir a marcação depois do salto e depois de ser revivido."""
+
+    ativa: bool = True
+    tecla_mapa: str = "m"
+    # Onde fica o centro da ilha com o mapa aberto, em frações da tela.
+    centro_mapa: list[float] = Field(default=[0.5, 0.5], min_length=2, max_length=2)
+    botao_marcar: Literal["esquerdo", "direito"] = "esquerdo"
+    chegada_m: int = Field(60, ge=10, le=500)
+    ciclos_sem_alvo: int = Field(8, ge=2, le=60)
+    tentativas: int = Field(2, ge=1, le=5)
+
+
 class Deteccao(BaseModel):
     limiar: float = Field(0.82, ge=0.3, le=0.99)
     limiar_recompensa: float = Field(0.80, ge=0.3, le=0.99)
@@ -145,6 +158,7 @@ class Config(BaseModel):
     deteccao: Deteccao = Deteccao()
     textos: Textos = Textos()
     discord: Discord = Discord()
+    navegacao: Navegacao = Navegacao()
 
 
 class ArmazemConfig:

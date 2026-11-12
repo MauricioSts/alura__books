@@ -114,6 +114,15 @@ export interface Config {
     monitor: number;
     titulo_janela: string;
   };
+  navegacao: {
+    ativa: boolean;
+    tecla_mapa: string;
+    centro_mapa: number[];
+    botao_marcar: "esquerdo" | "direito";
+    chegada_m: number;
+    ciclos_sem_alvo: number;
+    tentativas: number;
+  };
   discord: {
     ativo: boolean;
     webhook_url: string;

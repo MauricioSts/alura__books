@@ -50,6 +50,11 @@ O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele 
 
 **Preso em obstáculo:** a cada ciclo o app compara o cenário (faixa central de cima da tela, sem o personagem) com o do ciclo anterior. Se o bot está andando e a imagem praticamente não muda por 2 ciclos, ele está batendo em algo: pula, vira de 90° a 180° e muda de direção. No pouso, se já está parado no chão, ele encerra o planeio e começa a se mover. O "Reposicionar" também faz desvios curtos para os lados (A/D) e o "Rondar" usa W, A, S e D.
 
+**Ir até o meio do mapa:** logo depois do salto do ônibus e logo depois de ser revivido, ainda no ar, o bot abre o mapa (M), clica no centro para marcar e fecha. A marcação aparece na tela com a distância ("350 m"); a cada ciclo ele lê esse texto e vira a câmera na direção dele. Assim plana e depois corre (Shift+W) até o meio, em vez de ir reto para o mar. A menos de 60 m ele volta aos comportamentos normais. Se perder a marcação de vista por 8 ciclos, marca de novo (no máximo 2 vezes). Ajustes em **Automação → Ir até o meio do mapa**:
+
+- se o clique não marcar nada, troque para "Marcar com o botão direito";
+- se a marca cair fora do centro da ilha, ajuste "Centro da ilha no mapa" (x e y, em frações da tela com o mapa aberto).
+
 **Esperando reinício:** morto, com "Realocando… / Esperando para ser reiniciado" na tela por mais de 3 minutos (configurável em Automação), o bot volta ao lobby pelo menu.
 
 **Revivido:** se o bot estava espectando e o indicador de espectador some por 2 ciclos seguidos, ele foi revivido (reinício): segura W e abre o planador por 35 s (configurável), depois volta aos comportamentos normais.
@@ -229,6 +234,8 @@ Tudo é gravado em `config.json`, na raiz, e pode ser editado pela interface ou 
 | O bot sai da partida com companheiros vivos | O template `companheiro_morto` está casando com outra coisa. Recorte mais justo, confira a região da squad e o número de companheiros. |
 | O bot nunca sai quando fica sozinho | Faltam `companheiro_morto`, `sair_partida` ou `confirmar_sair`, ou o Preencher completou menos de 3 companheiros (ajuste o número em Automação). |
 | O bot só segura W e não vira a câmera | O giro é enviado como movimento relativo do mouse. Aumente "Pixels de mouse por grau" em Automação (por exemplo 20 a 40) até 90° virar 90°. |
+| Abre o mapa mas não marca | Troque o botão de marcar em Automação → Ir até o meio do mapa. |
+| Vai para o lado errado depois de marcar | Rode Detecção → Testar detecção agora com a marcação na tela e veja se a distância ("350 m") aparece em "Textos lidos na tela". |
 | O bot fica empurrando a parede | Aumente a "Sensibilidade de 'preso'" em Automação (por exemplo 3) para ele desviar mais cedo. |
 | Ele desvia toda hora mesmo andando | Diminua a "Sensibilidade de 'preso'" (por exemplo 0,8). |
 | Sai da partida com colegas vivos, ou nunca sai | Em Detecção, com uma partida aberta, rode o teste e olhe a prévia da região da squad: as barras dos colegas precisam estar dentro do recorte e aparecer contornadas. Ajuste a região. |

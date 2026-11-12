@@ -27,6 +27,7 @@ wheres_the_duck/
   maquina.py         máquina de estados: tick() a cada ciclo, animar() entre ciclos
   recompensas.py     prints antes/depois, índice JSON, cópia extra do Acesso à Loja Pirata
   historico.py       sessões em JSON
+  navegacao.py       marca o meio do mapa (M + clique) e segue a distância da marcação lida na tela
   notificacoes.py    aviso opcional no Discord (webhook do usuário), em segundo plano, uma vez por recompensa
   motor.py           thread que liga captura, máquina e publicação de estado; modos real, ensaio, simulação
   api.py             FastAPI em 127.0.0.1 + WebSocket; serve frontend/dist
@@ -39,7 +40,7 @@ Dados do usuário ficam na raiz e fora do git: `config.json`, `templates/`, `cap
 
 ### Fluxo de um ciclo (`Maquina.tick`)
 
-1. Fora de foco: pausa. 2. Recompensa: print, clique em Resgatar, print no ciclo seguinte. 3. Tela de fim (`fim_partida`): Jogar novamente, senão Retornar ao lobby. 4. Jogar (cooldown próprio). 5. Continuar/Fechar. 6. Aviso do ônibus: agenda o salto com atraso aleatório. 7. Tempo máximo: saída pelo ESC (adaptável: Confirmar > Voltar ao lobby > menu sanduíche ≡, este achado pelo formato em `visao.achar_menu_sanduiche`). 8. Sozinho por N ciclos (ícone recortado ou, sem ele, nenhuma barra de vida de colega depois de ter visto alguma): saída pelo ESC. Também: espectando sumido por 2 ciclos = revivido (planeio); cenário parado enquanto anda = preso (desvio). 9. Movimento, executado em `animar()`.
+1. Fora de foco: pausa. 2. Recompensa: print, clique em Resgatar, print no ciclo seguinte. 3. Tela de fim (`fim_partida`): Jogar novamente, senão Retornar ao lobby. 4. Jogar (cooldown próprio). 5. Continuar/Fechar. 6. Aviso do ônibus: agenda o salto com atraso aleatório. 7. Tempo máximo: saída pelo ESC (adaptável: Confirmar > Voltar ao lobby > menu sanduíche ≡, este achado pelo formato em `visao.achar_menu_sanduiche`). 8. Sozinho por N ciclos (ícone recortado ou, sem ele, nenhuma barra de vida de colega depois de ter visto alguma): saída pelo ESC. Também: espectando sumido por 2 ciclos = revivido (planeio); cenário parado enquanto anda = preso (desvio). Depois do salto e de ser revivido, `Navegador` marca o centro do mapa e guia a câmera pela distância ("350 m") lida na tela; enquanto o mapa está aberto o tick não clica em nada. 9. Movimento, executado em `animar()`.
 
 `animar()` roda a cada 0,1 s e só move o personagem quando o último `tick` terminou com a tela livre (`_tela_livre`). O tempo é sempre passado como argumento (`agora`), o que permite relógio virtual na simulação e nos testes.
 

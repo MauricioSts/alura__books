@@ -21,7 +21,7 @@ class Entrada(ABC):
     @abstractmethod
     def _tocar(self, tecla: str) -> None: ...
     @abstractmethod
-    def _clicar(self, x: int, y: int) -> None: ...
+    def _clicar(self, x: int, y: int, botao: str = "esquerdo") -> None: ...
     @abstractmethod
     def _mouse(self, baixo: bool) -> None: ...
     @abstractmethod
@@ -49,8 +49,8 @@ class Entrada(ABC):
     def tocar(self, tecla: str) -> None:
         self._tocar(tecla)
 
-    def clicar(self, x: int, y: int) -> None:
-        self._clicar(int(x), int(y))
+    def clicar(self, x: int, y: int, botao: str = "esquerdo") -> None:
+        self._clicar(int(x), int(y), botao)
 
     def mouse_baixo(self) -> None:
         if not self._mouse_preso:
@@ -89,7 +89,8 @@ class EntradaSimulada(Entrada):
     def _baixo(self, tecla): self._anotar("segurar", tecla)
     def _cima(self, tecla): self._anotar("soltar", tecla)
     def _tocar(self, tecla): self._anotar("tocar", tecla)
-    def _clicar(self, x, y): self._anotar("clicar", x, y)
+    def _clicar(self, x, y, botao="esquerdo"):
+        self._anotar("clicar" if botao == "esquerdo" else "clicar_direito", x, y)
     def _mouse(self, baixo): self._anotar("mouse_baixo" if baixo else "mouse_cima")
     def _mover_rel(self, dx, dy): self.acoes.append(("mover", dx, dy))  # fora do log: é muito frequente
 
@@ -113,10 +114,10 @@ class EntradaDireta(Entrada):
     def _cima(self, tecla): self._pdi.keyUp(tecla)
     def _tocar(self, tecla): self._pdi.press(tecla)
 
-    def _clicar(self, x, y):
+    def _clicar(self, x, y, botao="esquerdo"):
         self._pdi.moveTo(x, y)
         time.sleep(0.08)
-        self._pdi.click()
+        self._pdi.click(button="right" if botao == "direito" else "left")
 
     def _mouse(self, baixo):
         (self._pdi.mouseDown if baixo else self._pdi.mouseUp)()

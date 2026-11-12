@@ -15,7 +15,7 @@ export default function Automacao() {
   const { config, definir, salvar, sujo, aviso } = useConfig();
   const [testeDiscord, setTesteDiscord] = useState<{ ok: boolean; texto: string } | null>(null);
   if (!config) return <Cabecalho titulo="Automação" sub="Carregando…" />;
-  const { automacao: a, salto: s, movimento: m, discord: dc } = config;
+  const { automacao: a, salto: s, movimento: m, discord: dc, navegacao: nv } = config;
 
   const testarDiscord = async () => {
     setTesteDiscord(null);
@@ -124,6 +124,28 @@ export default function Automacao() {
         </div>
         <Chave ligado={s.abrir_planador_cedo} aoMudar={(v) => definir("salto.abrir_planador_cedo", v)}
           rotulo="Abrir o planador cedo para planar mais longe" />
+      </Secao>
+
+      <Secao titulo="Ir até o meio do mapa" nota="Depois do salto e depois de ser revivido, ainda no ar: abre o mapa, marca o centro e fecha. Depois vira a câmera na direção da distância da marcação (“350 m”) que aparece na tela, planando e correndo até lá. Assim ele não vai reto para o mar.">
+        <Chave ligado={nv.ativa} aoMudar={(v) => definir("navegacao.ativa", v)} rotulo="Marcar o meio do mapa e seguir a marcação" />
+        <div className="grade" style={{ marginTop: 12 }}>
+          <Campo rotulo="Tecla do mapa">
+            <input type="text" value={nv.tecla_mapa} onChange={(e) => definir("navegacao.tecla_mapa", e.target.value.trim().toLowerCase())} />
+          </Campo>
+          <Campo rotulo="Centro da ilha no mapa (x)" ajuda="Fração da largura da tela, com o mapa aberto. 0,5 = meio.">
+            <Numero valor={nv.centro_mapa[0]} min={0} max={1} passo={0.01} aoMudar={(v) => definir("navegacao.centro_mapa", [v, nv.centro_mapa[1]])} />
+          </Campo>
+          <Campo rotulo="Centro da ilha no mapa (y)" ajuda="Fração da altura da tela, com o mapa aberto.">
+            <Numero valor={nv.centro_mapa[1]} min={0} max={1} passo={0.01} aoMudar={(v) => definir("navegacao.centro_mapa", [nv.centro_mapa[0], v])} />
+          </Campo>
+          <Campo rotulo="Parar a esta distância" ajuda="Perto assim do centro, volta aos movimentos normais.">
+            <Numero valor={nv.chegada_m} min={10} max={500} aoMudar={(v) => definir("navegacao.chegada_m", v)} sufixo="m" />
+          </Campo>
+        </div>
+        <div className="segmentos largos">
+          <button className={nv.botao_marcar === "esquerdo" ? "ativo" : ""} onClick={() => definir("navegacao.botao_marcar", "esquerdo")}>Marcar com o botão esquerdo</button>
+          <button className={nv.botao_marcar === "direito" ? "ativo" : ""} onClick={() => definir("navegacao.botao_marcar", "direito")}>Marcar com o botão direito</button>
+        </div>
       </Secao>
 
       <Secao titulo="Movimentação em partida" nota="Comportamentos sorteados pelo peso; peso 0 desliga. Nunca atira, constrói nem segue jogadores.">

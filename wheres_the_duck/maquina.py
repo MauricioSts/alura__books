@@ -26,6 +26,7 @@ from .config import Config
 from .deteccao import Achado, Detector, Preparado
 from .entrada import Entrada
 from .foco import Foco
+from .navegacao import Navegador
 from .recompensas import PIRATA, ArquivoRecompensas
 from .registro import Registro
 from .visao import achar_menu_sanduiche, contar_companheiros_vivos, diferenca, miniatura_cenario
@@ -63,6 +64,8 @@ class Maquina:
         self.sessao = sessao
         self.ao_recompensa = ao_recompensa
         self.movimento = GerenciadorMovimento(entrada, cfg.movimento, self.rng)
+        self.nav = Navegador(entrada, lambda: self.cfg, registro, self.rng)
+        self._dims: tuple[int, int, int, int] | None = None
 
         self.fase = Fase.LOBBY
         self.pausado = False
@@ -146,6 +149,7 @@ class Maquina:
         return None
 
     def _encerrar_partida(self) -> None:
+        self.nav.parar(soltar=False)
         self._interromper()
         self.movimento.nova_partida()
         self._viu_companheiros = False
@@ -174,6 +178,10 @@ class Maquina:
         self._tela_livre = False
         if not self._checar_foco():
             return
+        altura, largura = quadro.imagem.shape[:2]
+        self._dims = (largura, altura, quadro.offset_x, quadro.offset_y)
+        if self.nav.marcando:
+            return  # mapa aberto marcando o centro: nada de clique até terminar
         prep = self.detector.preparar(quadro)
 
         if self._depois_pendente:
@@ -200,6 +208,7 @@ class Maquina:
         if self.fase in (Fase.EM_PARTIDA, Fase.ESPECTANDO, Fase.PLANANDO):
             espectando = self.detector.localizar(prep, "espectando") is not None
             if espectando and self.fase != Fase.ESPECTANDO:
+                self.nav.parar(soltar=False)
                 self._interromper()
                 self.movimento.nova_partida()  # a postura (agachado) zera ao morrer
                 self.fase = Fase.ESPECTANDO
@@ -214,6 +223,12 @@ class Maquina:
                 elif self._esperou_reinicio_demais(prep, agora):
                     return
 
+        if self.nav.ativo and self.fase in (Fase.PLANANDO, Fase.EM_PARTIDA):
+            if self.detector.leitor is None:
+                self._avisar_uma_vez("nav_sem_texto", "Seguir a marcação precisa da leitura de texto ligada.")
+                self.nav.parar()
+            else:
+                self.nav.atualizar(self.detector.ler_textos(prep), agora)
         self._checar_preso(quadro, agora)
 
         if self.fase in EM_JOGO and agora >= self._saida_bloqueada_ate:
@@ -228,6 +243,11 @@ class Maquina:
         """Chamado várias vezes por segundo, entre os ciclos: executa salto e movimento."""
         if not self._checar_foco():
             return
+        if self.nav.marcando:
+            if self.fase in (Fase.PLANANDO, Fase.EM_PARTIDA):
+                self.nav.passo_agenda(agora)
+                return
+            self.nav.cancelar_marcacao()
         if self.fase == Fase.ONIBUS:
             if agora >= self._t_salto:
                 self._saltar(agora)
@@ -246,6 +266,10 @@ class Maquina:
                 self.log.info("Fim do planeio: iniciando movimentação em partida.")
         elif not self._tela_livre:
             return  # há um botão ou tela na frente: nada de movimento por cima da interface
+        elif self.fase == Fase.EM_PARTIDA and self.nav.ativo:
+            if self.movimento.atual:
+                self.movimento.abandonar()
+            self.nav.andar(agora)
         elif self.fase == Fase.EM_PARTIDA:
             novo = self.movimento.passo(agora)
             if novo:
@@ -420,6 +444,7 @@ class Maquina:
         self._fim_planar = agora + salto.tempo_planando_s
         self._inicio_planar = agora
         self.fase = Fase.PLANANDO
+        self.nav.agendar_marcacao(agora + 2.5, self._dims)
         self.log.info(f"Salto: câmera {salto.angulo_graus:.0f}° para a "
                       f"{'direita' if lado > 0 else 'esquerda'}, planando para longe da rota.")
 
@@ -453,6 +478,7 @@ class Maquina:
         self._fim_planar = agora + self.cfg.salto.tempo_planando_renascer_s
         self._inicio_planar = agora
         self.fase = Fase.PLANANDO
+        self.nav.agendar_marcacao(agora + 1.8, self._dims)
         self.log.destaque("Bot revivido: segurando W e abrindo o planador.")
 
     # ------------------------------------------------------------------ preso em obstáculo
@@ -462,7 +488,7 @@ class Maquina:
         mudanca = diferenca(self._miniatura, mini)
         self._miniatura = mini
         limiar = self.cfg.movimento.limiar_preso
-        andando = (self.fase == Fase.EM_PARTIDA and self.movimento.andando) or (
+        andando = (self.fase == Fase.EM_PARTIDA and (self.movimento.andando or self.nav.ativo)) or (
             self.fase == Fase.PLANANDO and agora - self._inicio_planar >= 12)
         if not andando or mudanca >= limiar:
             self._ciclos_parado = 0
@@ -477,7 +503,7 @@ class Maquina:
             self.fase = Fase.EM_PARTIDA
             self.log.info("Já no chão e parado: encerrando o planeio e começando a se mover.")
         else:
-            self.movimento.desviar(agora)
+            (self.nav if self.nav.ativo else self.movimento).desviar(agora)
             self.log.info("Preso em obstáculo (tela parada): pulando e mudando de direção.")
 
     # ------------------------------------------------------------------ saída pelo menu ESC

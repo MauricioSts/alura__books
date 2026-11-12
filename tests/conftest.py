@@ -70,6 +70,8 @@ class Banco:
     def __init__(self, tmp_path: Path, nomes=None, semente: int = 7, **ajustes):
         self.cena = Cena(tmp_path / "templates", nomes)
         self.cfg = Config()
+        # A navegação até o meio do mapa tem testes próprios; aqui ela atrapalharia os comportamentos.
+        self.cfg.navegacao.ativa = False
         for caminho, valor in ajustes.items():
             secao, campo = caminho.split("__")
             setattr(getattr(self.cfg, secao), campo, valor)
