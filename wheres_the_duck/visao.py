@@ -62,16 +62,30 @@ def barras_de_vida(imagem: np.ndarray, regiao: list[float]) -> list[Barra]:
     return barras
 
 
-def contar_companheiros_vivos(imagem: np.ndarray, regiao: list[float]) -> int:
-    """Conta linhas da lista da squad que têm alguma barra (vida e escudo na mesma linha contam uma vez)."""
+def tolerancia_linha(imagem: np.ndarray) -> int:
+    return max(6, int(imagem.shape[0] * 0.012))
+
+
+def linhas_de_barras(imagem: np.ndarray, regiao: list[float]) -> list[int]:
+    """Altura (y) de cada linha da lista que tem barra; vida e escudo da mesma pessoa viram uma linha."""
     barras = sorted(barras_de_vida(imagem, regiao), key=lambda b: b.y)
     linhas: list[int] = []
-    tolerancia = max(6, int(imagem.shape[0] * 0.012))
+    tolerancia = tolerancia_linha(imagem)
     for b in barras:
         centro = b.y + b.altura // 2
-        if not linhas or centro - linhas[-1] > tolerancia:
+        # O escudo fica logo abaixo da vida: junta tudo que estiver a até 2 tolerâncias da linha anterior.
+        if not linhas or centro - linhas[-1] > 2 * tolerancia:
             linhas.append(centro)
-    return len(linhas)
+    return linhas
+
+
+def contar_companheiros_vivos(imagem: np.ndarray, regiao: list[float], y_proprio: int | None = None) -> int:
+    """Linhas com barra na região, sem contar a linha do próprio bot (se a altura dela for conhecida)."""
+    linhas = linhas_de_barras(imagem, regiao)
+    if y_proprio is None:
+        return len(linhas)
+    tolerancia = 2 * tolerancia_linha(imagem)
+    return sum(1 for y in linhas if abs(y - y_proprio) > tolerancia)
 
 
 def miniatura_cenario(imagem: np.ndarray) -> np.ndarray:

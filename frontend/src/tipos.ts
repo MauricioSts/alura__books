@@ -109,6 +109,7 @@ export interface Config {
     escala: number;
     regiao_squad: number[];
     barras_vida: boolean;
+    ignorar_barra_propria: boolean;
     monitor: number;
     titulo_janela: string;
   };
@@ -131,6 +132,7 @@ export interface ResultadoTeste {
   erro_leitura: string;
   companheiros_mortos: number;
   companheiros_vivos: number;
+  ignora_propria: boolean;
   fonte_sozinho: "template" | "barras" | "nenhuma";
   largura: number;
   altura: number;

@@ -17,7 +17,7 @@ Nesta ordem de prioridade:
 5. **Pop-up** com Continuar ou Fechar: clica.
 6. **Aviso de pular do ônibus**: agenda o salto para o trecho final da rota.
 7. **Tempo máximo de partida** (0 = desligado): sai pelo menu ESC.
-8. **Sobrou só o bot vivo**: o app conta as barras de vida e escudo dos colegas na lista da squad (canto superior direito). Se já tinha visto colegas nesta partida e nenhuma barra aparece por 3 ciclos seguidos, sem estar espectando, sai pelo menu ESC (ESC, Sair, Confirmar). Colega derrubado (barra vermelha) ainda conta como vivo. Se você recortar o ícone `companheiro_morto`, a contagem de ícones é usada no lugar das barras.
+8. **Sobrou só o bot vivo**: o app conta as barras de vida e escudo dos colegas na lista da squad (canto inferior esquerdo, ignorando a linha da vida do próprio bot). Se já tinha visto colegas nesta partida e nenhuma barra aparece por 3 ciclos seguidos, sem estar espectando, sai pelo menu ESC (ESC, Sair, Confirmar). Colega derrubado (barra vermelha) ainda conta como vivo. Se você recortar o ícone `companheiro_morto`, a contagem de ícones é usada no lugar das barras.
 9. **Movimento anti-inatividade**, descrito abaixo.
 
 ### Salto e pouso
@@ -245,7 +245,7 @@ Logs ficam em `logs/`, um arquivo por dia.
 - **Tela de resgate travada**: se a tela continua praticamente idêntica depois do clique, o app clica de novo sem contar outro tesouro.
 - **Aviso do token sem botão**: é registrado uma vez; com "parar tudo" ligado, o app para ali mesmo, no meio da partida, e solta as teclas.
 - **Recompensa sem template** dispara alarme por padrão (sem parar o bot), porque o template do token não pode ser recortado antes de ele aparecer.
-- **Lista da squad no canto superior direito** (região padrão 60% a 90% da largura, metade de cima), à esquerda do minimapa. Quem tinha a região antiga padrão no `config.json` é migrado automaticamente; uma região editada à mão é mantida.
+- **Lista da squad no canto inferior esquerdo** (região padrão: 0% a 30% da largura, de 55% da altura até embaixo). A vida do próprio bot fica na mesma região: no começo da partida, com pelo menos 2 linhas de barra visíveis, a mais baixa é tomada como a do bot e ignorada dali em diante. Antes disso o app não conclui que está sozinho. Quem tinha a região antiga padrão no `config.json` é migrado automaticamente; uma região editada à mão é mantida.
 - **"Sozinho" sem recorte** é decidido pelas barras de vida e escudo coloridas dos colegas. Só vale depois de o app ter visto pelo menos uma barra de colega na partida, para não sair por causa de uma região errada ou de um HUD diferente.
 - **Revivido** = indicador de espectador sumido por 2 ciclos. O primeiro ciclo sem ele não basta, para não confundir com uma leitura falha.
 - **Agachar** é tratado como alternado por padrão (um toque agacha), configurável.

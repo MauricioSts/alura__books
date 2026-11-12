@@ -28,7 +28,7 @@ from .entrada import Entrada
 from .foco import Foco
 from .recompensas import PIRATA, ArquivoRecompensas
 from .registro import Registro
-from .visao import contar_companheiros_vivos, diferenca, miniatura_cenario
+from .visao import contar_companheiros_vivos, diferenca, linhas_de_barras, miniatura_cenario
 
 
 class Fase(str, Enum):
@@ -83,6 +83,7 @@ class Maquina:
         self._t_espectador = 0.0
         self._ciclos_sozinho = 0
         self._viu_companheiros = False
+        self._y_proprio: int | None = None
         self._ciclos_sem_espectar = 0
         self._ciclos_parado = 0
         self._miniatura = None
@@ -147,6 +148,7 @@ class Maquina:
         self._interromper()
         self.movimento.nova_partida()
         self._viu_companheiros = False
+        self._y_proprio = None
         self._fila_pendente = False
         self._salto_agendado = False
         self._t_planador = None
@@ -464,7 +466,18 @@ class Maquina:
             mortos = self.detector.contar(prep, "companheiro_morto", self.cfg.deteccao.regiao_squad)
             sozinho = mortos >= auto.num_companheiros
         elif self.cfg.deteccao.barras_vida and prep.original is not None:
-            vivos = contar_companheiros_vivos(prep.original, self.cfg.deteccao.regiao_squad)
+            regiao = self.cfg.deteccao.regiao_squad
+            if self.cfg.deteccao.ignorar_barra_propria:
+                if self._y_proprio is None:
+                    linhas = linhas_de_barras(prep.original, regiao)
+                    if len(linhas) < 2:
+                        return  # ainda não dá para separar a barra do bot das dos colegas
+                    # A do bot é a mais baixa da lista (fica embaixo dos colegas).
+                    self._y_proprio = linhas[-1]
+                    self.log.info(f"Barra do próprio bot identificada; {len(linhas) - 1} colega(s) na squad.")
+                vivos = contar_companheiros_vivos(prep.original, regiao, self._y_proprio)
+            else:
+                vivos = contar_companheiros_vivos(prep.original, regiao)
             if vivos:
                 self._viu_companheiros = True
             # Só conclui "sozinho" se já tinha visto barras de colegas nesta partida.

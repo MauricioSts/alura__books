@@ -72,16 +72,16 @@ def test_tela_chapada_nao_gera_falso_positivo(cena):
 
 def test_conta_icones_sem_contar_sobreposicoes(cena):
     det = Detector(cena.pasta, escala=0.5, limiar=0.82)
-    regiao = [0.6, 0.0, 0.3, 0.5]
+    regiao = [0.0, 0.55, 0.3, 0.45]
     for n in range(4):
         assert det.contar(det.preparar(cena.tela(*cena.mortos(n))), "companheiro_morto", regiao) == n
 
 
 def test_contagem_respeita_a_regiao(cena):
     det = Detector(cena.pasta, escala=0.5, limiar=0.82)
-    tela = cena.tela(("companheiro_morto", 900, 60), ("companheiro_morto", 200, 500))
+    tela = cena.tela(("companheiro_morto", 40, 420), ("companheiro_morto", 900, 60))
     prep = det.preparar(tela)
-    assert det.contar(prep, "companheiro_morto", [0.6, 0.0, 0.3, 0.5]) == 1
+    assert det.contar(prep, "companheiro_morto", [0.0, 0.55, 0.3, 0.45]) == 1
     assert det.contar(prep, "companheiro_morto") == 2
 
 

@@ -62,8 +62,9 @@ class Movimento(BaseModel):
     olhar: PesoDuracao = PesoDuracao(peso=2, duracao_min_s=3, duracao_max_s=8)
 
 
-REGIAO_SQUAD_PADRAO = (0.6, 0.0, 0.3, 0.5)
-REGIAO_SQUAD_ANTIGA = [0.0, 0.0, 0.28, 0.5]
+REGIAO_SQUAD_PADRAO = (0.0, 0.55, 0.3, 0.45)
+# Padrões de versões anteriores: migrados para o atual se o usuário não os editou.
+REGIOES_SQUAD_ANTIGAS = ([0.0, 0.0, 0.28, 0.5], [0.6, 0.0, 0.3, 0.5])
 
 
 class Deteccao(BaseModel):
@@ -71,10 +72,12 @@ class Deteccao(BaseModel):
     limiar_recompensa: float = Field(0.80, ge=0.3, le=0.99)
     escala: float = Field(0.5, ge=0.2, le=1.0)
     # Região da lista da squad em frações da tela: x, y, largura, altura.
-    # Região da lista da squad (canto superior direito por padrão, ao lado do minimapa).
+    # Região da lista da squad (canto inferior esquerdo por padrão, onde também fica a vida do bot).
     regiao_squad: list[float] = Field(default=list(REGIAO_SQUAD_PADRAO), min_length=4, max_length=4)
     # Sem o recorte do ícone de eliminado: sozinho = nenhuma barra de vida de companheiro na região.
     barras_vida: bool = True
+    # A barra do próprio bot fica na mesma região: a linha mais baixa vista no início da partida é ignorada.
+    ignorar_barra_propria: bool = True
     monitor: int = Field(1, ge=1, le=8)
     titulo_janela: str = "Fortnite"
 
@@ -142,8 +145,8 @@ class ArmazemConfig:
             try:
                 dados = json.loads(self.caminho.read_text(encoding="utf-8"))
                 det = dados.get("deteccao") if isinstance(dados, dict) else None
-                if isinstance(det, dict) and det.get("regiao_squad") == REGIAO_SQUAD_ANTIGA:
-                    # A região padrão antiga (canto esquerdo) estava errada: atualiza só se não foi mexida.
+                if isinstance(det, dict) and det.get("regiao_squad") in REGIOES_SQUAD_ANTIGAS:
+                    # Região padrão de versão anterior (lugar errado): atualiza só se não foi mexida.
                     det["regiao_squad"] = list(REGIAO_SQUAD_PADRAO)
                 cfg = Config.model_validate(dados)
                 self._gravar(cfg)

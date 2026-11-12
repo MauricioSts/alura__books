@@ -331,7 +331,9 @@ class Motor:
         return {
             "resultados": resultados,
             "companheiros_mortos": detector.contar(prep, "companheiro_morto", cfg.regiao_squad),
+            # No teste não se sabe qual linha é do bot: mostra o total de linhas com barra.
             "companheiros_vivos": contar_companheiros_vivos(quadro.imagem, cfg.regiao_squad),
+            "ignora_propria": cfg.ignorar_barra_propria,
             "fonte_sozinho": "template" if detector.tem("companheiro_morto") else (
                 "barras" if cfg.barras_vida else "nenhuma"),
             "largura": int(quadro.imagem.shape[1]), "altura": int(quadro.imagem.shape[0]),
