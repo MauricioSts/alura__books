@@ -159,7 +159,7 @@ Por padrão, cada estado é reconhecido pelo texto na tela:
 | Lobby | JOGAR (o maior texto "JOGAR" da tela, para não confundir com a aba) |
 | Recompensa | VOCÊ ENCONTROU, ACESSO DESBLOQUEADO, TESOURO ENCONTRADO, RESGATAR, RESGATAR TUDO |
 | Tipo da recompensa | LOJA PIRATA, TRAJE DOURADO, VEÍCULO, PICARETA, FAIXA DE IMPROVISO, TELA DE CARREGAMENTO, GIZMO |
-| Fim de partida | ESQUADRÃO ELIMINADO, VOCÊ FICOU EM… ou, sem isso, JOGAR NOVAMENTE / RETORNAR AO LOBBY por 2 ciclos **sem** ESPECTANDO na tela |
+| Fim de partida | SUA COLOCAÇÃO, RESUMO DA PARTIDA, ESTATÍSTICAS DA PARTIDA (conferidos num print real) ou, sem isso, JOGAR NOVAMENTE / RETORNAR AO LOBBY por 2 ciclos **sem** ESPECTANDO na tela |
 | Ônibus | PULAR, SALTAR (ignorado no lobby) |
 | Espectando | MODO ESPECTADOR, ESPECTANDO, ASSISTINDO |
 | Menu ESC | SAIR DA PARTIDA, SAIR, CONFIRMAR, SIM |

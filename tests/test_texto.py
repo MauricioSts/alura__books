@@ -225,3 +225,18 @@ def test_espera_de_reinicio_desligada(tmp_path):
     for _ in range(200):
         r.tick(linha("MODO ESPECTADOR"), linha("REALOCANDO"))
     assert r.m.fase == Fase.ESPECTANDO
+
+
+def test_tela_final_real_clica_jogar_novamente_no_primeiro_ciclo(tmp_path):
+    """Textos lidos de um print real da tela final ("Sua colocação: Nº 2")."""
+    tela_final = [linha(t, x, y) for t, x, y in (
+        ("ESTATiSTICASDAPARTIDA", 260, 12), ("RESUMODAPARTIDA", 30, 12), ("SUA COLOCACAO:", 495, 25),
+        ("N°2", 700, 20), ("EQUIPARUMELEMENTAL", 948, 245), ("RETORNARAOLOBBY", 965, 330),
+        ("XXPARARESGATAR", 95, 540), ("OBTERPASSEDEBATALHA", 128, 682), ("MAPA ETAREFAS", 706, 778))]
+    tela_final.append(Linha("JOGAR NOVAMENTE", 953, 385, 224, 22, 0.9))
+    for fase in (Fase.EM_PARTIDA, Fase.ESPECTANDO, Fase.LOBBY):
+        r = Roteiro(tmp_path)
+        r.m.fase = fase
+        r.tick(*tela_final)
+        assert r.cliques() == [("clicar", 1065, 396)], fase
+        assert r.m.fase == Fase.FILA
