@@ -38,6 +38,9 @@ export default function Automacao() {
           <Campo rotulo="Tempo máximo por partida" ajuda="0 desliga. Ao atingir, sai pelo menu ESC.">
             <Numero valor={a.tempo_max_partida_min} min={0} aoMudar={(v) => definir("automacao.tempo_max_partida_min", v)} sufixo="min" />
           </Campo>
+          <Campo rotulo="Tempo máximo esperando reinício" ajuda="Morto em “Realocando… / Esperando para ser reiniciado” por mais que isso: volta ao lobby. 0 desliga.">
+            <Numero valor={a.tempo_max_reinicio_min} min={0} max={60} passo={0.5} aoMudar={(v) => definir("automacao.tempo_max_reinicio_min", v)} sufixo="min" />
+          </Campo>
           <Campo rotulo="Número de companheiros" ajuda="Em Esquadrão são 3.">
             <Numero valor={a.num_companheiros} min={1} max={3} aoMudar={(v) => definir("automacao.num_companheiros", v)} />
           </Campo>

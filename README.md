@@ -50,6 +50,8 @@ O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele 
 
 **Preso em obstáculo:** a cada ciclo o app compara o cenário (faixa central de cima da tela, sem o personagem) com o do ciclo anterior. Se o bot está andando e a imagem praticamente não muda por 2 ciclos, ele está batendo em algo: pula, vira de 90° a 180° e muda de direção. No pouso, se já está parado no chão, ele encerra o planeio e começa a se mover. O "Reposicionar" também faz desvios curtos para os lados (A/D) e o "Rondar" usa W, A, S e D.
 
+**Esperando reinício:** morto, com "Realocando… / Esperando para ser reiniciado" na tela por mais de 3 minutos (configurável em Automação), o bot volta ao lobby pelo menu.
+
 **Revivido:** se o bot estava espectando e o indicador de espectador some por 2 ciclos seguidos, ele foi revivido (reinício): segura W e abre o planador por 35 s (configurável), depois volta aos comportamentos normais.
 
 **O bot não foge da tempestade.** Ele não enxerga o mapa. Em algum momento ele vai morrer para a tempestade ou para outro jogador e seguir espectando os companheiros. Isso é esperado: o objetivo é só continuar na partida enquanto o esquadrão abre baús.
@@ -134,7 +136,7 @@ Por padrão, cada estado é reconhecido pelo texto na tela:
 | Tipo da recompensa | LOJA PIRATA, TRAJE DOURADO, VEÍCULO, PICARETA, FAIXA DE IMPROVISO, TELA DE CARREGAMENTO, GIZMO |
 | Fim de partida | ESQUADRÃO ELIMINADO, VOCÊ FICOU EM… ou, sem isso, JOGAR NOVAMENTE / RETORNAR AO LOBBY por 2 ciclos **sem** ESPECTANDO na tela |
 | Ônibus | PULAR, SALTAR (ignorado no lobby) |
-| Espectando | ESPECTANDO, ASSISTINDO |
+| Espectando | MODO ESPECTADOR, ESPECTANDO, ASSISTINDO |
 | Menu ESC | SAIR DA PARTIDA, SAIR, CONFIRMAR, SIM |
 | Pop-ups | CONTINUAR, FECHAR |
 

@@ -78,6 +78,7 @@ export interface Config {
     ciclos_sozinho: number;
     tempo_fila_max_s: number;
     apos_acesso_pirata: "parar" | "continuar";
+    tempo_max_reinicio_min: number;
     alertar_nao_identificada: boolean;
   };
   salto: {
@@ -109,7 +110,7 @@ export interface Config {
     escala: number;
     regiao_squad: number[];
     barras_vida: boolean;
-    ignorar_barra_propria: boolean;
+    lista_inclui_voce: boolean;
     monitor: number;
     titulo_janela: string;
   };

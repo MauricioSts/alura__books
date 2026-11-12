@@ -29,6 +29,7 @@ PRINCIPAIS = [
 
 EXTRAS = [
     InfoTemplate("menu_sanduiche", "extra", "Menu sanduíche (≡)", "Ícone de três tracinhos do menu ESC. Sem recorte, o app reconhece pelo formato."),
+    InfoTemplate("aguardando_reinicio", "extra", "Esperando reinício", "Texto \"Esperando para ser reiniciado\" / \"Realocando\" quando você está morto esperando ser reiniciado."),
     InfoTemplate("fechar", "extra", "Botão Fechar", "Botão FECHAR de pop-ups."),
     InfoTemplate("tesouro_encontrado", "extra", "Tela Tesouro encontrado", "Título da tela de tesouro. Serve para salvar o print mesmo sem botão visível."),
     InfoTemplate("aviso_encontrou", "extra", "Aviso Você encontrou", "Só o texto VOCÊ ENCONTROU do aviso que surge no meio da tela durante a partida. É igual para qualquer recompensa, então dá para recortar no primeiro gizmo."),

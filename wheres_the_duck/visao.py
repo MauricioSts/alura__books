@@ -66,26 +66,34 @@ def tolerancia_linha(imagem: np.ndarray) -> int:
     return max(6, int(imagem.shape[0] * 0.012))
 
 
-def linhas_de_barras(imagem: np.ndarray, regiao: list[float]) -> list[int]:
-    """Altura (y) de cada linha da lista que tem barra; vida e escudo da mesma pessoa viram uma linha."""
+def linhas_detalhadas(imagem: np.ndarray, regiao: list[float]) -> list[tuple[int, int]]:
+    """(y, espessura) de cada linha com barra; vida e escudo da mesma pessoa viram uma linha."""
     barras = sorted(barras_de_vida(imagem, regiao), key=lambda b: b.y)
-    linhas: list[int] = []
+    linhas: list[list[int]] = []
     tolerancia = tolerancia_linha(imagem)
     for b in barras:
         centro = b.y + b.altura // 2
-        # O escudo fica logo abaixo da vida: junta tudo que estiver a até 2 tolerâncias da linha anterior.
-        if not linhas or centro - linhas[-1] > 2 * tolerancia:
-            linhas.append(centro)
-    return linhas
+        # O escudo fica logo junto da vida: junta tudo que estiver a até 2 tolerâncias da linha anterior.
+        if not linhas or centro - linhas[-1][0] > 2 * tolerancia:
+            linhas.append([centro, b.altura])
+        else:
+            linhas[-1][1] = max(linhas[-1][1], b.altura)
+    return [(y, h) for y, h in linhas]
 
 
-def contar_companheiros_vivos(imagem: np.ndarray, regiao: list[float], y_proprio: int | None = None) -> int:
-    """Linhas com barra na região, sem contar a linha do próprio bot (se a altura dela for conhecida)."""
-    linhas = linhas_de_barras(imagem, regiao)
-    if y_proprio is None:
-        return len(linhas)
-    tolerancia = 2 * tolerancia_linha(imagem)
-    return sum(1 for y in linhas if abs(y - y_proprio) > tolerancia)
+def linhas_de_barras(imagem: np.ndarray, regiao: list[float]) -> list[int]:
+    """Só as linhas da lista da squad (barras bem mais grossas, como a vida grande do HUD, ficam de fora)."""
+    linhas = linhas_detalhadas(imagem, regiao)
+    if not linhas:
+        return []
+    fina = min(h for _, h in linhas)
+    return [y for y, h in linhas if h <= fina * 1.5]
+
+
+def contar_companheiros_vivos(imagem: np.ndarray, regiao: list[float], lista_inclui_voce: bool = False) -> int:
+    """Colegas com barra na lista. Se a lista mostra você (vivo), a sua linha é descontada."""
+    linhas = len(linhas_de_barras(imagem, regiao))
+    return max(0, linhas - 1) if lista_inclui_voce else linhas
 
 
 def miniatura_cenario(imagem: np.ndarray) -> np.ndarray:

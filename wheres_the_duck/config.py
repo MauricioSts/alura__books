@@ -21,6 +21,8 @@ class Automacao(BaseModel):
     # o app assume que a partida já começou.
     tempo_fila_max_s: float = Field(120, ge=20, le=600)
     apos_acesso_pirata: Literal["parar", "continuar"] = "parar"
+    # Morto esperando o reinício ("Realocando…") por mais que isso: volta ao lobby. 0 = desligado.
+    tempo_max_reinicio_min: float = Field(3, ge=0, le=60)
     # O template do Acesso à Loja Pirata só pode ser recortado depois de vê-lo uma vez.
     # Até lá, o jeito de não perder o aviso é alertar em toda recompensa sem template.
     alertar_nao_identificada: bool = True
@@ -76,8 +78,8 @@ class Deteccao(BaseModel):
     regiao_squad: list[float] = Field(default=list(REGIAO_SQUAD_PADRAO), min_length=4, max_length=4)
     # Sem o recorte do ícone de eliminado: sozinho = nenhuma barra de vida de companheiro na região.
     barras_vida: bool = True
-    # A barra do próprio bot fica na mesma região: a linha mais baixa vista no início da partida é ignorada.
-    ignorar_barra_propria: bool = True
+    # A lista da squad mostra você mesmo (no topo). Vivo e sozinho = só a sua linha tem barra.
+    lista_inclui_voce: bool = True
     monitor: int = Field(1, ge=1, le=8)
     titulo_janela: str = "Fortnite"
 
@@ -105,7 +107,8 @@ PADROES_TEXTO: dict[str, list[str]] = {
     "pular_onibus": ["PULAR", "SALTAR", "PULAR DO ÔNIBUS", "SALTAR DO ÔNIBUS"],
     "sair_partida": ["VOLTAR AO LOBBY", "RETORNAR AO LOBBY", "SAIR DA PARTIDA", "SAIR"],
     "confirmar_sair": ["CONFIRMAR", "SIM"],
-    "espectando": ["ESPECTANDO", "ASSISTINDO"],
+    "espectando": ["MODO ESPECTADOR", "ESPECTANDO", "ASSISTINDO"],
+    "aguardando_reinicio": ["ESPERANDO PARA SER REINICIADO", "REALOCANDO"],
     "tesouro_encontrado": ["TESOURO ENCONTRADO"],
     "aviso_encontrou": ["VOCÊ ENCONTROU", "ACESSO DESBLOQUEADO"],
     "acesso_pirata": ["LOJA PIRATA"],

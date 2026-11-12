@@ -8,15 +8,15 @@ from tests.conftest import Banco
 from wheres_the_duck.captura import Quadro
 from wheres_the_duck.config import ArmazemConfig, REGIAO_SQUAD_PADRAO
 from wheres_the_duck.maquina import Fase
-from wheres_the_duck.visao import barras_de_vida, contar_companheiros_vivos, diferenca, linhas_de_barras, miniatura_cenario
+from wheres_the_duck.visao import barras_de_vida, contar_companheiros_vivos, diferenca, miniatura_cenario
 
 REGIAO = list(REGIAO_SQUAD_PADRAO)
 VERDE, AZUL, VERMELHO = (60, 200, 60), (230, 150, 40), (40, 40, 230)
 
 
-def tela_squad(vivos=3, largura=1920, altura=1080, cenario=0, extras=(), proprio=True):
+def tela_squad(vivos=3, largura=1920, altura=1080, cenario=0, extras=(), voce=True, barra_grande=False):
+    """Lista da squad no canto inferior esquerdo: você no topo (se vivo), colegas abaixo."""
     img = np.full((altura, largura, 3), 45, np.uint8)
-    # cenário: um padrão que "anda" conforme o deslocamento
     # Blocos grandes, como prédios e árvores; reduzidos, ainda mudam quando a câmera anda.
     rng = np.random.default_rng(7)
     blocos = rng.integers(0, 255, ((altura // 60) + 1, (largura + 1200) // 60 + 1), dtype=np.uint8)
@@ -26,15 +26,15 @@ def tela_squad(vivos=3, largura=1920, altura=1080, cenario=0, extras=(), proprio
     escala = altura / 1080
 
     def barras(x, y, tamanho=1.0):
-        cv2.rectangle(img, (x, y), (x + int(150 * escala * tamanho), y + int(9 * escala * tamanho)), VERDE, -1)
-        y2 = y + int(12 * escala * tamanho)
-        cv2.rectangle(img, (x, y2), (x + int(110 * escala * tamanho), y2 + int(7 * escala * tamanho)), AZUL, -1)
+        cv2.rectangle(img, (x, y), (x + int(150 * escala * tamanho), y + int(6 * escala * tamanho)), AZUL, -1)
+        y2 = y + int(9 * escala * tamanho)
+        cv2.rectangle(img, (x, y2), (x + int(110 * escala * tamanho), y2 + int(6 * escala * tamanho)), VERDE, -1)
 
-    # Colegas empilhados acima da vida do próprio bot, no canto inferior esquerdo.
-    for i in range(vivos):
-        barras(int(60 * escala), int((660 + 70 * i) * escala))
-    if proprio:
-        barras(int(60 * escala), int(950 * escala), 1.6)
+    linhas = ([True] if voce else []) + [False] * vivos
+    for i, _ in enumerate(linhas):
+        barras(int(80 * escala), int((760 + 60 * i) * escala))
+    if barra_grande:  # vida grande do próprio HUD, bem mais grossa
+        barras(int(60 * escala), int(1030 * escala), 2.5)
     for cor, x, y in extras:
         cv2.rectangle(img, (x, y), (x + 150, y + 9), cor, -1)
     return img
@@ -43,28 +43,26 @@ def tela_squad(vivos=3, largura=1920, altura=1080, cenario=0, extras=(), proprio
 # ---------------------------------------------------------------- barras
 def test_conta_uma_linha_por_pessoa_vida_e_escudo_juntos():
     for n in range(4):
-        assert contar_companheiros_vivos(tela_squad(n, proprio=False), REGIAO) == n
-        assert contar_companheiros_vivos(tela_squad(n), REGIAO) == n + 1  # + o próprio bot
+        assert contar_companheiros_vivos(tela_squad(n, voce=False), REGIAO) == n
+        assert contar_companheiros_vivos(tela_squad(n), REGIAO) == n + 1  # + você
+        assert contar_companheiros_vivos(tela_squad(n), REGIAO, lista_inclui_voce=True) == n
 
 
-def test_ignora_a_linha_do_proprio_bot():
-    img = tela_squad(2)
-    y_proprio = linhas_de_barras(img, REGIAO)[-1]
-    assert contar_companheiros_vivos(img, REGIAO, y_proprio) == 2
-    assert contar_companheiros_vivos(tela_squad(0), REGIAO, y_proprio) == 0
+def test_barra_grande_do_hud_nao_conta():
+    assert contar_companheiros_vivos(tela_squad(2, barra_grande=True), REGIAO, True) == 2
 
 
 def test_funciona_em_outra_resolucao():
-    assert contar_companheiros_vivos(tela_squad(2, 1280, 720, proprio=False), REGIAO) == 2
+    assert contar_companheiros_vivos(tela_squad(2, 1280, 720, voce=False), REGIAO) == 2
 
 
 def test_derrubado_ainda_conta_como_vivo():
-    img = tela_squad(0, proprio=False, extras=[(VERMELHO, 60, 700)])
+    img = tela_squad(0, voce=False, extras=[(VERMELHO, 60, 700)])
     assert contar_companheiros_vivos(img, REGIAO) == 1
 
 
 def test_barra_fora_da_regiao_e_formas_que_nao_sao_barra_sao_ignoradas():
-    img = tela_squad(0, proprio=False, extras=[(VERDE, 1300, 100)])  # fora da região
+    img = tela_squad(0, voce=False, extras=[(VERDE, 1300, 100)])  # fora da região
     cv2.rectangle(img, (100, 800), (160, 860), VERDE, -1)  # quadrado verde (árvore)
     assert barras_de_vida(img, REGIAO) == []
 
@@ -103,8 +101,8 @@ def test_sozinho_pelas_barras_sai_pelo_menu(tmp_path):
     assert b.maquina.fase == Fase.SAINDO
 
 
-def test_so_a_barra_do_bot_desde_o_inicio_nao_sai(tmp_path):
-    """Sem 2 linhas visíveis não dá para saber qual é a do bot: não conclui nada."""
+def test_so_a_sua_linha_desde_o_inicio_nao_sai(tmp_path):
+    """Nunca viu colega vivo (região errada, HUD diferente): não conclui que está sozinho."""
     b = partida_sem_template_de_icone(tmp_path)
     for i in range(8):
         tick_imagem(b, tela_squad(0, 1280, 720, cenario=10 * i))
@@ -115,7 +113,7 @@ def test_sem_nunca_ver_barras_nao_sai(tmp_path):
     """HUD diferente ou região errada: sem ter visto colegas, não conclui que está sozinho."""
     b = partida_sem_template_de_icone(tmp_path)
     for i in range(8):
-        tick_imagem(b, tela_squad(0, 1280, 720, cenario=10 * i, proprio=False))
+        tick_imagem(b, tela_squad(0, 1280, 720, cenario=10 * i, voce=False))
     assert b.maquina.fase == Fase.EM_PARTIDA
 
 

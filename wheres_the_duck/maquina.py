@@ -28,8 +28,7 @@ from .entrada import Entrada
 from .foco import Foco
 from .recompensas import PIRATA, ArquivoRecompensas
 from .registro import Registro
-from .visao import (achar_menu_sanduiche, contar_companheiros_vivos, diferenca, linhas_de_barras,
-                    miniatura_cenario)
+from .visao import achar_menu_sanduiche, contar_companheiros_vivos, diferenca, miniatura_cenario
 
 
 class Fase(str, Enum):
@@ -84,7 +83,8 @@ class Maquina:
         self._t_espectador = 0.0
         self._ciclos_sozinho = 0
         self._viu_companheiros = False
-        self._y_proprio: int | None = None
+        self._desde_reinicio: float | None = None
+        self._ciclos_sem_reinicio = 0
         self._ciclos_sem_espectar = 0
         self._ciclos_parado = 0
         self._miniatura = None
@@ -149,7 +149,7 @@ class Maquina:
         self._interromper()
         self.movimento.nova_partida()
         self._viu_companheiros = False
-        self._y_proprio = None
+        self._desde_reinicio = None
         self._fila_pendente = False
         self._salto_agendado = False
         self._t_planador = None
@@ -209,7 +209,10 @@ class Maquina:
             elif self.fase == Fase.ESPECTANDO:
                 self._ciclos_sem_espectar = 0 if espectando else self._ciclos_sem_espectar + 1
                 if self._ciclos_sem_espectar >= 2:
+                    self._desde_reinicio = None
                     self._renascer(agora)
+                elif self._esperou_reinicio_demais(prep, agora):
+                    return
 
         self._checar_preso(quadro, agora)
 
@@ -420,6 +423,26 @@ class Maquina:
         self.log.info(f"Salto: câmera {salto.angulo_graus:.0f}° para a "
                       f"{'direita' if lado > 0 else 'esquerda'}, planando para longe da rota.")
 
+    def _esperou_reinicio_demais(self, prep: Preparado, agora: float) -> bool:
+        """Morto em "Realocando… / Esperando para ser reiniciado" por tempo demais: volta ao lobby."""
+        limite = self.cfg.automacao.tempo_max_reinicio_min * 60
+        if limite <= 0:
+            return False
+        if self.detector.localizar(prep, "aguardando_reinicio"):
+            self._ciclos_sem_reinicio = 0
+            if self._desde_reinicio is None:
+                self._desde_reinicio = agora
+                self.log.info("Esperando para ser reiniciado.")
+        else:
+            self._ciclos_sem_reinicio += 1
+            if self._ciclos_sem_reinicio >= 3:  # uma leitura falha não zera a contagem
+                self._desde_reinicio = None
+        if self._desde_reinicio is not None and agora - self._desde_reinicio >= limite:
+            self._desde_reinicio = None
+            self._iniciar_saida(agora, f"esperando reinício há mais de {limite / 60:g} min")
+            return self.fase == Fase.SAINDO
+        return False
+
     def _renascer(self, agora: float) -> None:
         """O espectador sumiu por 2 ciclos: o bot foi revivido e cai do céu de novo."""
         self._interromper()
@@ -467,18 +490,9 @@ class Maquina:
             mortos = self.detector.contar(prep, "companheiro_morto", self.cfg.deteccao.regiao_squad)
             sozinho = mortos >= auto.num_companheiros
         elif self.cfg.deteccao.barras_vida and prep.original is not None:
-            regiao = self.cfg.deteccao.regiao_squad
-            if self.cfg.deteccao.ignorar_barra_propria:
-                if self._y_proprio is None:
-                    linhas = linhas_de_barras(prep.original, regiao)
-                    if len(linhas) < 2:
-                        return  # ainda não dá para separar a barra do bot das dos colegas
-                    # A do bot é a mais baixa da lista (fica embaixo dos colegas).
-                    self._y_proprio = linhas[-1]
-                    self.log.info(f"Barra do próprio bot identificada; {len(linhas) - 1} colega(s) na squad.")
-                vivos = contar_companheiros_vivos(prep.original, regiao, self._y_proprio)
-            else:
-                vivos = contar_companheiros_vivos(prep.original, regiao)
+            # Só é chamado com o bot vivo (fora do modo espectador): a linha dele tem barra.
+            vivos = contar_companheiros_vivos(prep.original, self.cfg.deteccao.regiao_squad,
+                                              self.cfg.deteccao.lista_inclui_voce)
             if vivos:
                 self._viu_companheiros = True
             # Só conclui "sozinho" se já tinha visto barras de colegas nesta partida.

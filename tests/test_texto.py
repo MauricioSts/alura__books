@@ -190,3 +190,31 @@ def test_ocr_real_le_tela_desenhada(tmp_path):
     assert det.localizar(prep, "aviso_encontrou")
     assert det.classificar(prep, ["acesso_pirata", "gizmo"], 0.8)[0] == "acesso_pirata"
     assert det.localizar(prep, "resgatar") is None
+
+
+def test_modo_espectador_e_espera_de_reinicio_longa_volta_ao_lobby(tmp_path):
+    """Como no jogo: 'MODO ESPECTADOR' + 'Realocando… / Esperando para ser reiniciado'."""
+    r = Roteiro(tmp_path)
+    r.tick(linha("JOGAR"))
+    r.tick(dt=200)
+    assert r.m.fase == Fase.EM_PARTIDA
+    morto = (linha("MODOESPECTADOR", 572, 22), linha("Realocando..", 604, 451),
+             linha("ESPERANDOPARASERREINICIADO", 534, 520))
+    r.tick(*morto)
+    assert r.m.fase == Fase.ESPECTANDO
+    for _ in range(100):  # 150 s esperando: ainda não
+        r.tick(*morto)
+    assert r.m.fase == Fase.ESPECTANDO
+    for _ in range(25):  # passa de 3 min
+        r.tick(*morto)
+    assert r.m.fase == Fase.SAINDO and ("tocar", "esc") in r.entrada.acoes
+
+
+def test_espera_de_reinicio_desligada(tmp_path):
+    r = Roteiro(tmp_path)
+    r.cfg.automacao.tempo_max_reinicio_min = 0
+    r.tick(linha("JOGAR"))
+    r.tick(dt=200)
+    for _ in range(200):
+        r.tick(linha("MODO ESPECTADOR"), linha("REALOCANDO"))
+    assert r.m.fase == Fase.ESPECTANDO
