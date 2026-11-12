@@ -272,7 +272,7 @@ def test_sem_templates_de_saida_nao_aperta_esc(tmp_path):
 
 
 # ---------------------------------------------------------------- movimento
-TECLAS_PERMITIDAS = {"w", "a", "s", "d", "shift", "ctrl", "space", "f"}
+TECLAS_PERMITIDAS = {"w", "a", "s", "d", "shift", "ctrl", "space", "f", "1", "2", "3", "4", "5"}
 
 
 def test_movimento_em_partida_so_usa_o_permitido(banco):
@@ -284,17 +284,19 @@ def test_movimento_em_partida_so_usa_o_permitido(banco):
             assert acao[1] in TECLAS_PERMITIDAS, acao
         assert acao[0] != "clicar"
     vistos = {l["msg"].split()[1] for l in banco.registro.linhas() if l["msg"].startswith("Comportamento:")}
-    assert vistos == {"esconder", "reposicionar", "rondar", "coletar", "olhar"}
+    assert vistos == {"esconder", "reposicionar", "rondar", "coletar", "olhar", "atirar"}
 
 
-def test_botao_do_mouse_so_e_segurado_depois_de_selecionar_a_picareta(banco):
+def test_botao_do_mouse_so_e_segurado_depois_de_escolher_picareta_ou_arma(banco):
     entrar_em_partida(banco)
     banco.animar(2400)
     acoes = banco.entrada.acoes
     baixos = [i for i, a in enumerate(acoes) if a[0] == "mouse_baixo"]
     assert baixos
+    selecoes = {("tocar", t) for t in ("f", "1", "2", "3", "4", "5")}
     for i in baixos:
-        assert acoes[i - 1] == ("tocar", "f")
+        # Antes de segurar o botão, sempre escolheu picareta ou arma.
+        assert any(a in selecoes for a in acoes[max(0, i - 40):i])
 
 
 def test_nunca_fica_sem_input_alem_do_limite_de_inatividade(banco):
@@ -322,7 +324,7 @@ def test_esconder_fica_abaixo_do_limite_de_inatividade():
 
 def test_pesos_zerados_caem_no_olhar():
     cfg = Movimento()
-    for nome in ("esconder", "reposicionar", "rondar", "coletar", "olhar"):
+    for nome in ("esconder", "reposicionar", "rondar", "coletar", "olhar", "atirar"):
         getattr(cfg, nome).peso = 0
     g = GerenciadorMovimento(EntradaSimulada(), cfg, random.Random(1))
     g.passo(0.0)

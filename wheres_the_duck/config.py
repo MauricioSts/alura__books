@@ -57,11 +57,18 @@ class Movimento(BaseModel):
     agachar_alternado: bool = True
     tecla_correr: str = "shift"
     tecla_picareta: str = "f"
-    esconder: PesoDuracao = PesoDuracao(peso=4, duracao_min_s=15, duracao_max_s=40)
-    reposicionar: PesoDuracao = PesoDuracao(peso=2, duracao_min_s=3, duracao_max_s=8)
-    rondar: PesoDuracao = PesoDuracao(peso=2, duracao_min_s=5, duracao_max_s=12)
-    coletar: PesoDuracao = PesoDuracao(peso=1, duracao_min_s=3, duracao_max_s=7)
-    olhar: PesoDuracao = PesoDuracao(peso=2, duracao_min_s=3, duracao_max_s=8)
+    # Teclas das armas no inventário (o "atirar" escolhe uma delas).
+    teclas_armas: list[str] = Field(default=["1", "2", "3", "4", "5"], min_length=1, max_length=10)
+    esconder: PesoDuracao = PesoDuracao(peso=1, duracao_min_s=6, duracao_max_s=15)
+    reposicionar: PesoDuracao = PesoDuracao(peso=4, duracao_min_s=4, duracao_max_s=10)
+    rondar: PesoDuracao = PesoDuracao(peso=3, duracao_min_s=5, duracao_max_s=12)
+    coletar: PesoDuracao = PesoDuracao(peso=1, duracao_min_s=3, duracao_max_s=6)
+    olhar: PesoDuracao = PesoDuracao(peso=1, duracao_min_s=2, duracao_max_s=5)
+    atirar: PesoDuracao = PesoDuracao(peso=2, duracao_min_s=4, duracao_max_s=9)
+
+
+# Pesos padrão de versões anteriores: quem não mexeu recebe os novos (mais movimento).
+PESOS_ANTIGOS = {"esconder": 4, "reposicionar": 2, "rondar": 2, "coletar": 1, "olhar": 2}
 
 
 REGIAO_SQUAD_PADRAO = (0.0, 0.55, 0.3, 0.45)
@@ -78,6 +85,9 @@ class Navegacao(BaseModel):
     centro_mapa: list[float] = Field(default=[0.5, 0.5], min_length=2, max_length=2)
     botao_marcar: Literal["esquerdo", "direito"] = "esquerdo"
     chegada_m: int = Field(60, ge=10, le=500)
+    # Fugir da tempestade: marca o centro da zona segura (círculo branco no mapa).
+    seguir_zona: bool = True
+    intervalo_zona_s: float = Field(75, ge=20, le=600)
     ciclos_sem_alvo: int = Field(8, ge=2, le=60)
     tentativas: int = Field(2, ge=1, le=5)
 
@@ -174,6 +184,11 @@ class ArmazemConfig:
             try:
                 dados = json.loads(self.caminho.read_text(encoding="utf-8"))
                 det = dados.get("deteccao") if isinstance(dados, dict) else None
+                mov = dados.get("movimento") if isinstance(dados, dict) else None
+                if isinstance(mov, dict) and all(
+                        isinstance(mov.get(n), dict) and mov[n].get("peso") == p for n, p in PESOS_ANTIGOS.items()):
+                    for nome in PESOS_ANTIGOS:
+                        mov.pop(nome, None)  # volta aos padrões novos
                 if isinstance(det, dict) and det.get("regiao_squad") in REGIOES_SQUAD_ANTIGAS:
                     # Região padrão de versão anterior (lugar errado): atualiza só se não foi mexida.
                     det["regiao_squad"] = list(REGIAO_SQUAD_PADRAO)

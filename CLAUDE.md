@@ -20,7 +20,7 @@ wheres_the_duck/
   captura.py         interface Capturador: CapturadorTela (mss) e CapturadorPasta (simulação)
   deteccao.py        Detector: TM_CCOEFF_NORMED em cinza, escala, contagem sem sobreposição; sem template, cai na leitura de texto
   texto.py           interface LeitorTexto: LeitorRapidOCR (OCR local) e LeitorFixo (testes); comparação tolerante
-  visao.py           barras de vida da squad (colegas vivos), diferença de cenário (bot preso) e ícone ≡ do menu
+  visao.py           barras de vida da squad, diferença de cenário (preso), ícone ≡, tela de tempestade e círculo da zona segura no mapa
   entrada.py         interface Entrada: EntradaDireta (pydirectinput) e EntradaSimulada (dry-run)
   foco.py            interface Foco: FocoWindows (título da janela) e FocoSimulado; DPI awareness
   comportamentos.py  esconder, reposicionar, rondar, coletar, olhar; sorteio por peso
@@ -40,7 +40,7 @@ Dados do usuário ficam na raiz e fora do git: `config.json`, `templates/`, `cap
 
 ### Fluxo de um ciclo (`Maquina.tick`)
 
-1. Fora de foco: pausa. 2. Recompensa: print, clique em Resgatar, print no ciclo seguinte. 3. Tela de fim (`fim_partida`): Jogar novamente, senão Retornar ao lobby. 4. Jogar (cooldown próprio). 5. Continuar/Fechar. 6. Aviso do ônibus: agenda o salto com atraso aleatório. 7. Tempo máximo: saída pelo ESC (adaptável: Confirmar > Voltar ao lobby > menu sanduíche ≡, este achado pelo formato em `visao.achar_menu_sanduiche`). 8. Sozinho por N ciclos (ícone recortado ou, sem ele, nenhuma barra de vida de colega depois de ter visto alguma): saída pelo ESC. Também: espectando sumido por 2 ciclos = revivido (planeio); cenário parado enquanto anda = preso (desvio). Depois do salto e de ser revivido, `Navegador` marca o centro do mapa e guia a câmera pela distância ("350 m") lida na tela; enquanto o mapa está aberto o tick não clica em nada. 9. Movimento, executado em `animar()`.
+1. Fora de foco: pausa. 2. Recompensa: print, clique em Resgatar, print no ciclo seguinte. 3. Tela de fim (`fim_partida`): Jogar novamente, senão Retornar ao lobby. 4. Jogar (cooldown próprio). 5. Continuar/Fechar. 6. Aviso do ônibus: agenda o salto com atraso aleatório. 7. Tempo máximo: saída pelo ESC (adaptável: Confirmar > Voltar ao lobby > menu sanduíche ≡, este achado pelo formato em `visao.achar_menu_sanduiche`). 8. Sozinho por N ciclos (ícone recortado ou, sem ele, nenhuma barra de vida de colega depois de ter visto alguma): saída pelo ESC. Também: espectando sumido por 2 ciclos = revivido (planeio); cenário parado enquanto anda = preso (desvio). Depois do salto, de ser revivido, a cada `intervalo_zona_s` e ao entrar na tempestade, `Navegador` marca o centro da zona segura (ou do mapa) e guia a câmera pela distância ("350 m") lida na tela; enquanto o mapa está aberto o tick não clica em nada. 9. Movimento, executado em `animar()`.
 
 `animar()` roda a cada 0,1 s e só move o personagem quando o último `tick` terminou com a tela livre (`_tela_livre`). O tempo é sempre passado como argumento (`agora`), o que permite relógio virtual na simulação e nos testes.
 
@@ -48,7 +48,7 @@ Dados do usuário ficam na raiz e fora do git: `config.json`, `templates/`, `cap
 
 - O app só usa o que um humano vê na tela e teclado/mouse normais.
 - Nada de burlar, enganar ou se esconder do anti-cheat: sem driver, injeção de DLL, leitura ou escrita de memória do jogo, spoofing de hardware, ocultação de processo ou de janela, nem qualquer técnica cujo propósito seja evitar detecção. Se uma ideia servir só para isso, não implemente.
-- Nada que dê vantagem em combate: sem mira, sem leitura de posição de inimigos. O bot nunca atira, nunca constrói, nunca segue jogadores.
+- Nada que dê vantagem em combate: sem mira, sem leitura de posição de inimigos, nunca constrói, nunca segue jogadores. Atirar só a esmo (comportamento "atirar", pedido pelo usuário): rajadas para direções sorteadas, sem olhar para alvo nenhum.
 - Nunca enviar input com o Fortnite fora de foco. Ao perder o foco, a única coisa permitida é soltar as teclas que estavam pressionadas.
 - F8 sempre para tudo e solta todas as teclas.
 - Nenhuma conexão externa, telemetria, login ou licença, com uma única exceção pedida pelo usuário: o aviso de recompensa no Discord (`notificacoes.py`), desligado por padrão, que só envia para um webhook do Discord configurado pelo próprio usuário e só manda o aviso e o print. A URL do webhook nunca vai para o repositório nem para o .exe; fica só no `config.json` local. A API escuta só em 127.0.0.1 e recusa Host/Origin que não sejam locais. Fontes e sons são locais.

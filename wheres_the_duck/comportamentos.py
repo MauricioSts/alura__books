@@ -1,7 +1,7 @@
 """Comportamentos de movimento em partida, sorteados com pesos e durações variáveis.
 
-Nenhum deles atira, constrói ou segue jogadores: são só deslocamentos e giros de câmera
-feitos às cegas para o jogo não expulsar por inatividade.
+São deslocamentos, giros de câmera e tiros a esmo, todos feitos às cegas: nenhum mira,
+procura inimigos, constrói ou segue jogadores.
 """
 from __future__ import annotations
 
@@ -170,6 +170,45 @@ class Coletar(Comportamento):
         self.entrada.mouse_cima()
 
 
+class Atirar(Comportamento):
+    """Pega uma arma e dá rajadas curtas para direções aleatórias, andando. Não mira em nada."""
+
+    nome = "atirar"
+    anda = True
+
+    def iniciar(self, agora):
+        self.postura.levantar()
+        self.entrada.tocar(self.rng.choice(self.cfg.teclas_armas))
+        self._tecla = self.rng.choice(("w", "w", "a", "d"))
+        self.entrada.tecla_baixo(self._tecla)
+        self._fim_rajada = 0.0
+        self._proxima = agora + self.rng.uniform(0.4, 1.2)
+        self._proxima_troca = agora + self.rng.uniform(1.5, 3)
+
+    def passo(self, agora):
+        if self.entrada.mouse_pressionado and agora >= self._fim_rajada:
+            self.entrada.mouse_cima()
+            self._proxima = agora + self.rng.uniform(0.6, 2.0)
+        if not self.entrada.mouse_pressionado and agora >= self._proxima:
+            # Direção sorteada, sem olhar para alvo nenhum.
+            self.girar(self.rng.uniform(-60, 60), self.rng.uniform(-3, 3))
+            self.entrada.mouse_baixo()
+            self._fim_rajada = agora + self.rng.uniform(0.2, 0.7)
+        if agora >= self._proxima_troca:
+            self.entrada.tecla_cima(self._tecla)
+            self._tecla = self.rng.choice(("w", "w", "a", "d", "s"))
+            self.entrada.tecla_baixo(self._tecla)
+            self._proxima_troca = agora + self.rng.uniform(1.5, 3)
+
+    def desviar(self, agora):
+        self.entrada.tocar("space")
+        self.girar(self.rng.choice((-1, 1)) * self.rng.uniform(90, 160))
+
+    def encerrar(self):
+        self.entrada.mouse_cima()
+        self.entrada.tecla_cima(self._tecla)
+
+
 class Olhar(Comportamento):
     """Giro lento de câmera, sem andar."""
 
@@ -185,7 +224,7 @@ class Olhar(Comportamento):
         self.girar(self._velocidade * dt)
 
 
-CLASSES = {c.nome: c for c in (Esconder, Reposicionar, Rondar, Coletar, Olhar)}
+CLASSES = {c.nome: c for c in (Esconder, Reposicionar, Rondar, Coletar, Olhar, Atirar)}
 
 
 class GerenciadorMovimento:

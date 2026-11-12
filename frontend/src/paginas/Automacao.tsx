@@ -3,12 +3,13 @@ import { api } from "../api";
 import { BarraSalvar, Cabecalho, Campo, Chave, Numero, Secao, useConfig } from "../componentes";
 import type { PesoDuracao } from "../tipos";
 
-const COMPORTAMENTOS: { id: "esconder" | "reposicionar" | "rondar" | "coletar" | "olhar"; rotulo: string; desc: string }[] = [
+const COMPORTAMENTOS: { id: "esconder" | "reposicionar" | "rondar" | "coletar" | "olhar" | "atirar"; rotulo: string; desc: string }[] = [
   { id: "esconder", rotulo: "Esconder", desc: "Agacha e fica parado, com pequenos ajustes de câmera." },
   { id: "reposicionar", rotulo: "Reposicionar", desc: "Corre numa direção por alguns segundos, vira e para." },
   { id: "rondar", rotulo: "Rondar", desc: "Anda agachado em trajetos curtos, mudando de direção." },
   { id: "coletar", rotulo: "Coletar", desc: "Bate com a picareta no que estiver à frente." },
   { id: "olhar", rotulo: "Olhar em volta", desc: "Giro lento de câmera, sem andar." },
+  { id: "atirar", rotulo: "Atirar a esmo", desc: "Pega uma arma e dá rajadas curtas para direções aleatórias, andando. Não mira em nada." },
 ];
 
 export default function Automacao() {
@@ -126,8 +127,9 @@ export default function Automacao() {
           rotulo="Abrir o planador cedo para planar mais longe" />
       </Secao>
 
-      <Secao titulo="Ir até o meio do mapa" nota="Depois do salto e depois de ser revivido, ainda no ar: abre o mapa, marca o centro e fecha. Depois vira a câmera na direção da distância da marcação (“350 m”) que aparece na tela, planando e correndo até lá. Assim ele não vai reto para o mar.">
-        <Chave ligado={nv.ativa} aoMudar={(v) => definir("navegacao.ativa", v)} rotulo="Marcar o meio do mapa e seguir a marcação" />
+      <Secao titulo="Navegação e tempestade" nota="Depois do salto e depois de ser revivido, ainda no ar: abre o mapa, marca o centro da zona segura (o círculo branco; sem ele, o meio do mapa) e fecha. Depois vira a câmera na direção da distância da marcação (“350 m”) que aparece na tela, planando e correndo até lá. Refaz isso de tempos em tempos e na hora em que entrar na tempestade (tela arroxeada).">
+        <Chave ligado={nv.ativa} aoMudar={(v) => definir("navegacao.ativa", v)} rotulo="Marcar no mapa e seguir a marcação" />
+        <Chave ligado={nv.seguir_zona} aoMudar={(v) => definir("navegacao.seguir_zona", v)} rotulo="Fugir da tempestade: marcar o centro da zona segura" />
         <div className="grade" style={{ marginTop: 12 }}>
           <Campo rotulo="Tecla do mapa">
             <input type="text" value={nv.tecla_mapa} onChange={(e) => definir("navegacao.tecla_mapa", e.target.value.trim().toLowerCase())} />
@@ -137,6 +139,9 @@ export default function Automacao() {
           </Campo>
           <Campo rotulo="Centro da ilha no mapa (y)" ajuda="Fração da altura da tela, com o mapa aberto.">
             <Numero valor={nv.centro_mapa[1]} min={0} max={1} passo={0.01} aoMudar={(v) => definir("navegacao.centro_mapa", [nv.centro_mapa[0], v])} />
+          </Campo>
+          <Campo rotulo="Conferir a zona a cada" ajuda="Reabre o mapa e remarca a zona segura nesse intervalo.">
+            <Numero valor={nv.intervalo_zona_s} min={20} max={600} aoMudar={(v) => definir("navegacao.intervalo_zona_s", v)} sufixo="s" />
           </Campo>
           <Campo rotulo="Parar a esta distância" ajuda="Perto assim do centro, volta aos movimentos normais.">
             <Numero valor={nv.chegada_m} min={10} max={500} aoMudar={(v) => definir("navegacao.chegada_m", v)} sufixo="m" />
@@ -148,7 +153,7 @@ export default function Automacao() {
         </div>
       </Secao>
 
-      <Secao titulo="Movimentação em partida" nota="Comportamentos sorteados pelo peso; peso 0 desliga. Nunca atira, constrói nem segue jogadores.">
+      <Secao titulo="Movimentação em partida" nota="Comportamentos sorteados pelo peso; peso 0 desliga. Os tiros são a esmo: o bot não mira, não procura inimigos, não constrói e não segue jogadores.">
         <table className="tabela">
           <thead>
             <tr><th>Comportamento</th><th>Peso</th><th>Duração mínima</th><th>Duração máxima</th></tr>
@@ -182,6 +187,10 @@ export default function Automacao() {
           </Campo>
           <Campo rotulo="Tecla de correr">
             <input type="text" value={m.tecla_correr} onChange={(e) => definir("movimento.tecla_correr", e.target.value.trim().toLowerCase())} />
+          </Campo>
+          <Campo rotulo="Teclas das armas" ajuda="Separadas por espaço. O “atirar” escolhe uma delas.">
+            <input type="text" value={m.teclas_armas.join(" ")}
+              onChange={(e) => definir("movimento.teclas_armas", e.target.value.split(/\s+/).filter(Boolean))} />
           </Campo>
           <Campo rotulo="Tecla da picareta">
             <input type="text" value={m.tecla_picareta} onChange={(e) => definir("movimento.tecla_picareta", e.target.value.trim().toLowerCase())} />

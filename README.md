@@ -44,13 +44,14 @@ Comportamentos sorteados por peso, com duração variável, todos configuráveis
 | Reposicionar | Vira, corre (Shift+W) alguns segundos e para. |
 | Rondar | Anda agachado em trajetos curtos, mudando de direção. |
 | Coletar | Seleciona a picareta e bate no que estiver à frente. |
+| Atirar a esmo | Pega uma arma (teclas 1 a 5) e dá rajadas curtas para direções sorteadas, andando. Não mira em nada. |
 | Olhar em volta | Giro lento de câmera, sem andar. |
 
-O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele reduz o input a um pequeno movimento de mouse de tempos em tempos.
+O bot **não mira, não procura inimigos, nunca constrói e nunca segue jogadores**; os tiros são a esmo. Atirar entrega a posição, então com "Atirar a esmo" ligado ele tende a morrer mais cedo (peso 0 desliga). Espectando, ele reduz o input a um pequeno movimento de mouse de tempos em tempos.
 
 **Preso em obstáculo:** a cada ciclo o app compara o cenário (faixa central de cima da tela, sem o personagem) com o do ciclo anterior. Se o bot está andando e a imagem praticamente não muda por 2 ciclos, ele está batendo em algo: pula, vira de 90° a 180° e muda de direção. No pouso, se já está parado no chão, ele encerra o planeio e começa a se mover. O "Reposicionar" também faz desvios curtos para os lados (A/D) e o "Rondar" usa W, A, S e D.
 
-**Ir até o meio do mapa:** logo depois do salto do ônibus e logo depois de ser revivido, ainda no ar, o bot abre o mapa (M), clica no centro para marcar e fecha. A marcação aparece na tela com a distância ("350 m"); a cada ciclo ele lê esse texto e vira a câmera na direção dele. Assim plana e depois corre (Shift+W) até o meio, em vez de ir reto para o mar. A menos de 60 m ele volta aos comportamentos normais. Se perder a marcação de vista por 8 ciclos, marca de novo (no máximo 2 vezes). Ajustes em **Automação → Ir até o meio do mapa**:
+**Ir até a zona segura:** logo depois do salto do ônibus e logo depois de ser revivido, ainda no ar, o bot abre o mapa (M), clica no centro da zona segura (ou do mapa) para marcar e fecha. A marcação aparece na tela com a distância ("350 m"); a cada ciclo ele lê esse texto e vira a câmera na direção dele. Assim plana e depois corre (Shift+W) até o meio, em vez de ir reto para o mar. A menos de 60 m ele volta aos comportamentos normais. Se perder a marcação de vista por 8 ciclos, marca de novo (no máximo 2 vezes). Ajustes em **Automação → Ir até o meio do mapa**:
 
 - se o clique não marcar nada, troque para "Marcar com o botão direito";
 - se a marca cair fora do centro da ilha, ajuste "Centro da ilha no mapa" (x e y, em frações da tela com o mapa aberto).
@@ -59,7 +60,7 @@ O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele 
 
 **Revivido:** se o bot estava espectando e o indicador de espectador some por 2 ciclos seguidos, ele foi revivido (reinício): segura W e abre o planador por 35 s (configurável), depois volta aos comportamentos normais.
 
-**O bot não foge da tempestade.** Ele não enxerga o mapa. Em algum momento ele vai morrer para a tempestade ou para outro jogador e seguir espectando os companheiros. Isso é esperado: o objetivo é só continuar na partida enquanto o esquadrão abre baús.
+**Tempestade:** o bot abre o mapa, acha o círculo branco da próxima zona segura e marca o centro dele (sem círculo, marca o meio do mapa), e segue a marcação. Refaz isso a cada 75 s e na hora em que a tela fica arroxeada (dentro da tempestade). Ainda assim ele pode morrer para a tempestade ou para outro jogador e seguir espectando, o que é esperado.
 
 ### Recompensas
 
@@ -276,6 +277,7 @@ Logs ficam em `logs/`, um arquivo por dia.
 - **Lista da squad no canto inferior esquerdo** (região padrão: 0% a 30% da largura, de 55% da altura até embaixo). A vida do próprio bot fica na mesma região: no começo da partida, com pelo menos 2 linhas de barra visíveis, a mais baixa é tomada como a do bot e ignorada dali em diante. Antes disso o app não conclui que está sozinho. Quem tinha a região antiga padrão no `config.json` é migrado automaticamente; uma região editada à mão é mantida.
 - **"Sozinho" sem recorte** é decidido pelas barras de vida e escudo coloridas dos colegas. Só vale depois de o app ter visto pelo menos uma barra de colega na partida, para não sair por causa de uma região errada ou de um HUD diferente.
 - **Revivido** = indicador de espectador sumido por 2 ciclos. O primeiro ciclo sem ele não basta, para não confundir com uma leitura falha.
+- **Pesos padrão rebalanceados** para mais movimento (Esconder 1, Reposicionar 4, Rondar 3, Atirar 2, Coletar 1, Olhar 1). Quem estava com os pesos padrão antigos recebe os novos; pesos editados à mão são mantidos.
 - **Agachar** é tratado como alternado por padrão (um toque agacha), configurável.
 - **Leitura de texto (OCR)** com RapidOCR, que roda local e traz os modelos dentro do pacote (sem download na primeira execução). Foi escolhido no lugar do OCR do Windows porque dá para testar fora do Windows e vai embutido no .exe.
 - **Fim de partida sem template**: inferido por Jogar novamente / Retornar ao lobby visível por 2 ciclos sem "Espectando", para não sair enquanto assiste a um colega.

@@ -103,6 +103,8 @@ export interface Config {
     rondar: PesoDuracao;
     coletar: PesoDuracao;
     olhar: PesoDuracao;
+    atirar: PesoDuracao;
+    teclas_armas: string[];
   };
   deteccao: {
     limiar: number;
@@ -122,6 +124,8 @@ export interface Config {
     chegada_m: number;
     ciclos_sem_alvo: number;
     tentativas: number;
+    seguir_zona: boolean;
+    intervalo_zona_s: number;
   };
   discord: {
     ativo: boolean;
