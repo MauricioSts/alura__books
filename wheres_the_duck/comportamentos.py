@@ -54,9 +54,14 @@ class Comportamento:
     def girar(self, graus: float, vertical: float = 0.0) -> None:
         self.entrada.mover_mouse_rel(graus * self.cfg.pixels_por_grau, vertical * self.cfg.pixels_por_grau)
 
+    anda = False  # segura tecla de movimento (pode ficar preso em obstáculo)
+
     def iniciar(self, agora: float) -> None: ...
     def passo(self, agora: float) -> None: ...
     def encerrar(self) -> None: ...
+
+    def desviar(self, agora: float) -> None:
+        """Chamado quando a tela parou de mudar enquanto o bot andava: está preso."""
 
 
 class Esconder(Comportamento):
@@ -78,6 +83,7 @@ class Reposicionar(Comportamento):
     """Vira para uma direção, corre alguns segundos e para."""
 
     nome = "reposicionar"
+    anda = True
 
     def iniciar(self, agora):
         self.postura.levantar()
@@ -85,6 +91,9 @@ class Reposicionar(Comportamento):
         self.entrada.tecla_baixo(self.cfg.tecla_correr)
         self.entrada.tecla_baixo("w")
         self._proximo_pulo = agora + self.rng.uniform(1.5, 4)
+        self._lateral: str | None = None
+        self._fim_lateral = 0.0
+        self._proxima_lateral = agora + self.rng.uniform(1.5, 3.5)
 
     def passo(self, agora):
         # Um pulo de vez em quando ajuda a não ficar preso em obstáculos baixos.
@@ -92,8 +101,25 @@ class Reposicionar(Comportamento):
             if self.rng.random() < 0.4:
                 self.entrada.tocar("space")
             self._proximo_pulo = agora + self.rng.uniform(1.5, 4)
+        # Desvios laterais curtos (A ou D) e pequenas correções de rumo.
+        if self._lateral and agora >= self._fim_lateral:
+            self.entrada.tecla_cima(self._lateral)
+            self._lateral = None
+        if not self._lateral and agora >= self._proxima_lateral:
+            self._lateral = self.rng.choice(("a", "d"))
+            self.entrada.tecla_baixo(self._lateral)
+            self.girar(self.rng.uniform(-25, 25))
+            self._fim_lateral = agora + self.rng.uniform(0.4, 1.2)
+            self._proxima_lateral = agora + self.rng.uniform(2, 4.5)
+
+    def desviar(self, agora):
+        self.entrada.tocar("space")
+        self.girar(self.rng.choice((-1, 1)) * self.rng.uniform(100, 170))
+        self._proximo_pulo = agora + 0.8
 
     def encerrar(self):
+        if self._lateral:
+            self.entrada.tecla_cima(self._lateral)
         self.entrada.tecla_cima("w")
         self.entrada.tecla_cima(self.cfg.tecla_correr)
         self.girar(self.rng.uniform(-40, 40))
@@ -103,6 +129,7 @@ class Rondar(Comportamento):
     """Anda agachado em trajetos curtos, mudando de direção."""
 
     nome = "rondar"
+    anda = True
 
     def iniciar(self, agora):
         self.postura.agachar()
@@ -114,9 +141,17 @@ class Rondar(Comportamento):
         if agora >= self._proximo:
             self.girar(self.rng.choice((-1, 1)) * self.rng.uniform(20, 90))
             self.entrada.tecla_cima(self._tecla)
-            self._tecla = self.rng.choice(("w", "w", "a", "d"))
+            self._tecla = self.rng.choice(("w", "w", "a", "d", "s"))
             self.entrada.tecla_baixo(self._tecla)
             self._proximo = agora + self.rng.uniform(1.2, 2.8)
+
+    def desviar(self, agora):
+        self.entrada.tecla_cima(self._tecla)
+        self.entrada.tocar("space")
+        self.girar(self.rng.choice((-1, 1)) * self.rng.uniform(90, 180))
+        self._tecla = self.rng.choice(("w", "a", "d"))
+        self.entrada.tecla_baixo(self._tecla)
+        self._proximo = agora + self.rng.uniform(1.2, 2.8)
 
     def encerrar(self):
         self.entrada.tecla_cima(self._tecla)
@@ -167,6 +202,14 @@ class GerenciadorMovimento:
     @property
     def nome_atual(self) -> str:
         return self.atual.nome if self.atual else ""
+
+    @property
+    def andando(self) -> bool:
+        return bool(self.atual and self.atual.anda)
+
+    def desviar(self, agora: float) -> None:
+        if self.atual:
+            self.atual.desviar(agora)
 
     def _sortear(self) -> tuple[Comportamento, float]:
         nomes = list(CLASSES)

@@ -60,7 +60,8 @@ class Cena:
         return Quadro(img, offset[0], offset[1], "sintetico")
 
     def mortos(self, n: int):
-        return [("companheiro_morto", 40, 60 + 50 * i) for i in range(n)]
+        # Lista da squad no canto superior direito (região padrão).
+        return [("companheiro_morto", 900, 60 + 50 * i) for i in range(n)]
 
 
 class Banco:

@@ -289,7 +289,7 @@ def test_movimento_em_partida_so_usa_o_permitido(banco):
 
 def test_botao_do_mouse_so_e_segurado_depois_de_selecionar_a_picareta(banco):
     entrar_em_partida(banco)
-    banco.animar(600)
+    banco.animar(2400)
     acoes = banco.entrada.acoes
     baixos = [i for i, a in enumerate(acoes) if a[0] == "mouse_baixo"]
     assert baixos
@@ -338,10 +338,17 @@ def test_espectando_reduz_ao_minimo_de_input(banco):
     assert 3 <= len(banco.entrada.acoes) <= 6  # um toque de mouse a cada ~40s
 
 
-def test_volta_a_se_mover_se_for_reanimado(banco):
+def test_revivido_cai_do_ceu_segura_w_e_abre_o_planador(banco):
     entrar_em_partida(banco)
     banco.tick("espectando")
     banco.tick()
+    assert banco.maquina.fase == Fase.ESPECTANDO  # um ciclo sem o indicador ainda não basta
+    banco.tick()
+    assert banco.maquina.fase == Fase.PLANANDO
+    banco.entrada.acoes.clear()
+    banco.animar(2)
+    assert "w" in banco.entrada.teclas_pressionadas and ("tocar", "space") in banco.entrada.acoes
+    banco.animar(banco.cfg.salto.tempo_planando_renascer_s)
     assert banco.maquina.fase == Fase.EM_PARTIDA
 
 

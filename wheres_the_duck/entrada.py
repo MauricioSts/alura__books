@@ -122,4 +122,11 @@ class EntradaDireta(Entrada):
         (self._pdi.mouseDown if baixo else self._pdi.mouseUp)()
 
     def _mover_rel(self, dx, dy):
-        self._pdi.moveRel(dx, dy, relative=True)
+        # Giros grandes num único evento costumam ser cortados pelo jogo: envia em passos curtos.
+        passos = max(1, int(max(abs(dx), abs(dy)) // 40) + 1)
+        feito_x = feito_y = 0
+        for i in range(1, passos + 1):
+            alvo_x, alvo_y = round(dx * i / passos), round(dy * i / passos)
+            self._pdi.moveRel(alvo_x - feito_x, alvo_y - feito_y, relative=True, _pause=False)
+            feito_x, feito_y = alvo_x, alvo_y
+            time.sleep(0.004)

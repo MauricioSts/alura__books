@@ -28,6 +28,7 @@ from .entrada import Entrada
 from .foco import Foco
 from .recompensas import PIRATA, ArquivoRecompensas
 from .registro import Registro
+from .visao import contar_companheiros_vivos, diferenca, miniatura_cenario
 
 
 class Fase(str, Enum):
@@ -81,6 +82,11 @@ class Maquina:
         self._fim_planar = 0.0
         self._t_espectador = 0.0
         self._ciclos_sozinho = 0
+        self._viu_companheiros = False
+        self._ciclos_sem_espectar = 0
+        self._ciclos_parado = 0
+        self._miniatura = None
+        self._inicio_planar = 0.0
         self._ciclos_fim = 0
         self._saida_passo = 0
         self._saida_tentativas = 0
@@ -140,6 +146,7 @@ class Maquina:
     def _encerrar_partida(self) -> None:
         self._interromper()
         self.movimento.nova_partida()
+        self._viu_companheiros = False
         self._fila_pendente = False
         self._salto_agendado = False
         self._t_planador = None
@@ -187,16 +194,21 @@ class Maquina:
             self.log.info("Aviso do ônibus não foi visto; assumindo partida em andamento.")
             self.fase = Fase.EM_PARTIDA
 
-        if self.fase in (Fase.EM_PARTIDA, Fase.ESPECTANDO):
+        if self.fase in (Fase.EM_PARTIDA, Fase.ESPECTANDO, Fase.PLANANDO):
             espectando = self.detector.localizar(prep, "espectando") is not None
-            if espectando and self.fase == Fase.EM_PARTIDA:
+            if espectando and self.fase != Fase.ESPECTANDO:
                 self._interromper()
+                self.movimento.nova_partida()  # a postura (agachado) zera ao morrer
                 self.fase = Fase.ESPECTANDO
                 self._t_espectador = agora
+                self._ciclos_sem_espectar = 0
                 self.log.info("Bot eliminado: espectando um companheiro.")
-            elif not espectando and self.fase == Fase.ESPECTANDO:
-                self.fase = Fase.EM_PARTIDA
-                self.log.info("Indicador de espectador sumiu: de volta ao jogo.")
+            elif self.fase == Fase.ESPECTANDO:
+                self._ciclos_sem_espectar = 0 if espectando else self._ciclos_sem_espectar + 1
+                if self._ciclos_sem_espectar >= 2:
+                    self._renascer(agora)
+
+        self._checar_preso(quadro, agora)
 
         if self.fase in EM_JOGO and agora >= self._saida_bloqueada_ate:
             limite = self.cfg.automacao.tempo_max_partida_min * 60
@@ -214,6 +226,10 @@ class Maquina:
             if agora >= self._t_salto:
                 self._saltar(agora)
         elif self.fase == Fase.PLANANDO:
+            if not self._tela_livre:
+                self.entrada.tecla_cima("w")  # algo na frente: espera a tela liberar
+                return
+            self.entrada.tecla_baixo("w")
             if self._t_planador is not None and agora >= self._t_planador:
                 self._t_planador = None
                 self.entrada.tocar("space")
@@ -396,9 +412,47 @@ class Maquina:
         self.entrada.tecla_baixo("w")
         self._t_planador = agora + 1.2 if salto.abrir_planador_cedo else None
         self._fim_planar = agora + salto.tempo_planando_s
+        self._inicio_planar = agora
         self.fase = Fase.PLANANDO
         self.log.info(f"Salto: câmera {salto.angulo_graus:.0f}° para a "
                       f"{'direita' if lado > 0 else 'esquerda'}, planando para longe da rota.")
+
+    def _renascer(self, agora: float) -> None:
+        """O espectador sumiu por 2 ciclos: o bot foi revivido e cai do céu de novo."""
+        self._interromper()
+        self.movimento.nova_partida()
+        self._ciclos_sem_espectar = 0
+        self.entrada.tecla_baixo("w")
+        self._t_planador = agora + 1.0  # abre o planador logo
+        self._fim_planar = agora + self.cfg.salto.tempo_planando_renascer_s
+        self._inicio_planar = agora
+        self.fase = Fase.PLANANDO
+        self.log.destaque("Bot revivido: segurando W e abrindo o planador.")
+
+    # ------------------------------------------------------------------ preso em obstáculo
+    def _checar_preso(self, quadro: Quadro, agora: float) -> None:
+        """Se o cenário não muda enquanto o bot anda, ele está preso: desvia (ou termina o pouso)."""
+        mini = miniatura_cenario(quadro.imagem)
+        mudanca = diferenca(self._miniatura, mini)
+        self._miniatura = mini
+        limiar = self.cfg.movimento.limiar_preso
+        andando = (self.fase == Fase.EM_PARTIDA and self.movimento.andando) or (
+            self.fase == Fase.PLANANDO and agora - self._inicio_planar >= 12)
+        if not andando or mudanca >= limiar:
+            self._ciclos_parado = 0
+            return
+        self._ciclos_parado += 1
+        if self._ciclos_parado < 2:
+            return
+        self._ciclos_parado = 0
+        if self.fase == Fase.PLANANDO:
+            self.entrada.tecla_cima("w")
+            self._t_planador = None
+            self.fase = Fase.EM_PARTIDA
+            self.log.info("Já no chão e parado: encerrando o planeio e começando a se mover.")
+        else:
+            self.movimento.desviar(agora)
+            self.log.info("Preso em obstáculo (tela parada): pulando e mudando de direção.")
 
     # ------------------------------------------------------------------ saída pelo menu ESC
     def _checar_sozinho(self, prep: Preparado, agora: float) -> None:
@@ -406,10 +460,18 @@ class Maquina:
         if self.fase != Fase.EM_PARTIDA or not auto.sair_quando_sozinho:
             self._ciclos_sozinho = 0
             return
-        if not self.detector.tem("companheiro_morto"):
+        if self.detector.tem("companheiro_morto"):
+            mortos = self.detector.contar(prep, "companheiro_morto", self.cfg.deteccao.regiao_squad)
+            sozinho = mortos >= auto.num_companheiros
+        elif self.cfg.deteccao.barras_vida and prep.original is not None:
+            vivos = contar_companheiros_vivos(prep.original, self.cfg.deteccao.regiao_squad)
+            if vivos:
+                self._viu_companheiros = True
+            # Só conclui "sozinho" se já tinha visto barras de colegas nesta partida.
+            sozinho = self._viu_companheiros and vivos == 0
+        else:
             return
-        mortos = self.detector.contar(prep, "companheiro_morto", self.cfg.deteccao.regiao_squad)
-        self._ciclos_sozinho = self._ciclos_sozinho + 1 if mortos >= auto.num_companheiros else 0
+        self._ciclos_sozinho = self._ciclos_sozinho + 1 if sozinho else 0
         if self._ciclos_sozinho >= auto.ciclos_sozinho:
             self._iniciar_saida(agora, "todos os companheiros eliminados, sobrou só o bot")
 
