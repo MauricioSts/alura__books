@@ -56,9 +56,22 @@ class Motor:
 
         return FocoWindows(self.armazem.atual.deteccao.titulo_janela)
 
+    def novo_leitor(self):
+        textos = self.armazem.atual.textos
+        if not textos.ativo:
+            return None
+        from .texto import LeitorRapidOCR
+
+        if not LeitorRapidOCR.disponivel():
+            self.log.aviso("Leitura de texto indisponível: pacote rapidocr_onnxruntime não instalado.")
+            return None
+        return LeitorRapidOCR(textos.largura_leitura)
+
     def novo_detector(self) -> Detector:
-        det = self.armazem.atual.deteccao
-        return Detector(self.pasta_templates, det.escala, det.limiar)
+        cfg = self.armazem.atual
+        return Detector(self.pasta_templates, cfg.deteccao.escala, cfg.deteccao.limiar,
+                        leitor=self.novo_leitor(), padroes=cfg.textos.padroes,
+                        confianca_texto=cfg.textos.confianca_minima)
 
     @property
     def rodando(self) -> bool:
@@ -117,10 +130,12 @@ class Motor:
             self._parar.clear()
             self._inicio = self._relogio()
             self.historico.gravar(self._sessao)
-            faltando = [t.nome for t in catalogo.PRINCIPAIS if not detector.tem(t.nome)]
-            self.log.info(f"Iniciado em modo {modo}. Templates carregados: {len(detector.nomes())}.")
+            por_texto = [t.nome for t in catalogo.PRINCIPAIS if detector.por_texto(t.nome)]
+            faltando = [t.nome for t in catalogo.PRINCIPAIS if not detector.disponivel(t.nome)]
+            self.log.info(f"Iniciado em modo {modo}. Templates recortados: {len(detector.nomes())}; "
+                          f"reconhecidos pela leitura de texto: {len(por_texto)}.")
             if faltando:
-                self.log.aviso("Templates principais ausentes (estados ignorados): " + ", ".join(faltando))
+                self.log.aviso("Sem template nem texto (estados ignorados): " + ", ".join(faltando))
             self._thread = threading.Thread(target=self._laco, args=(capturador,), daemon=True,
                                             name="wheres_the_duck-motor")
             self._thread.start()
@@ -284,17 +299,29 @@ class Motor:
         prep = detector.preparar(quadro)
         resultados = []
         for info in catalogo.TODOS:
-            achado = detector.pontuar(prep, info.nome)
             limiar = cfg.limiar_recompensa if info.grupo == "recompensa" else cfg.limiar
+            if detector.tem(info.nome):
+                achado = detector.pontuar(prep, info.nome)
+                detectado = bool(achado and achado.score >= limiar)
+                fonte = "template"
+            else:
+                achado = detector.buscar_texto(prep, info.nome)
+                detectado = achado is not None
+                fonte = "texto" if detector.por_texto(info.nome) else "nenhuma"
             resultados.append({
                 "nome": info.nome, "rotulo": info.rotulo, "grupo": info.grupo,
-                "configurado": detector.tem(info.nome),
+                "configurado": detector.disponivel(info.nome), "fonte": fonte,
                 "score": round(achado.score, 3) if achado else None,
-                "detectado": bool(achado and achado.score >= limiar),
-                "x": achado.x if achado else None, "y": achado.y if achado else None,
+                "detectado": detectado,
+                "x": achado.x if detectado and achado else None,
+                "y": achado.y if detectado and achado else None,
             })
+        linhas = detector.ler_textos(prep) if detector.leitor else []
         return {
             "resultados": resultados,
             "companheiros_mortos": detector.contar(prep, "companheiro_morto", cfg.regiao_squad),
             "largura": int(quadro.imagem.shape[1]), "altura": int(quadro.imagem.shape[0]),
+            "textos": [{"texto": l.texto, "confianca": round(l.confianca, 2)} for l in linhas],
+            "leitura_ativa": detector.leitor is not None,
+            "erro_leitura": detector.erro_leitura,
         }

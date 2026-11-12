@@ -110,9 +110,12 @@ def test_simulacao_pela_api_com_websocket(cliente):
         for _ in range(500):
             msg = ws.receive_json()
             tipos.add(msg["tipo"])
-            if msg["tipo"] == "estado" and not msg["estado"]["rodando"] and "log" in tipos:
+            # Para só no estado final da sessão (com o motivo da parada já gravado).
+            if (msg["tipo"] == "estado" and not msg["estado"]["rodando"]
+                    and msg["estado"]["ultimo_motivo"] and "recompensa" in tipos):
                 break
         assert {"estado", "log", "recompensa"} <= tipos
+    assert esperar(lambda: not cliente.app.state.motor.rodando)
     dados = cliente.get("/api/historico").json()
     item = dados["recompensas"][0]
     assert item["tipo"] == "acesso_pirata" and item["depois"]

@@ -81,6 +81,7 @@ class Maquina:
         self._fim_planar = 0.0
         self._t_espectador = 0.0
         self._ciclos_sozinho = 0
+        self._ciclos_fim = 0
         self._saida_passo = 0
         self._saida_tentativas = 0
         self._saida_bloqueada_ate = -1e9
@@ -239,7 +240,11 @@ class Maquina:
     # ------------------------------------------------------------------ recompensas
     def _tratar_recompensa(self, quadro: Quadro, prep: Preparado, agora: float) -> bool:
         botao = self._primeiro(prep, BOTOES_RESGATE)
-        tela = self._primeiro(prep, TELAS_RECOMPENSA, self.cfg.deteccao.limiar_recompensa)
+        # "Loja Pirata" escrito na tela não basta por texto (o lobby pode mostrar a loja do evento):
+        # por texto, o gatilho é o aviso "Você encontrou".
+        telas = [n for n in TELAS_RECOMPENSA
+                 if not (n == "acesso_pirata" and self.detector.por_texto(n))]
+        tela = self._primeiro(prep, telas, self.cfg.deteccao.limiar_recompensa)
         if not botao and not tela:
             self._aviso_ativo = False
             self._cinza_recompensa = None
@@ -310,8 +315,20 @@ class Maquina:
             self.pedido_parada = "Acesso à Loja Pirata resgatado"
 
     # ------------------------------------------------------------------ telas e botões
+    def _fim_inferido(self, prep: Preparado) -> bool:
+        """Sem template de fim: Jogar novamente / Retornar ao lobby sem estar espectando, 2 ciclos."""
+        if self.detector.tem("fim_partida") or self.fase in (Fase.LOBBY, Fase.FILA):
+            self._ciclos_fim = 0
+            return False
+        botao = self._primeiro(prep, ("jogar_novamente", "retornar_lobby"))
+        if botao and not self.detector.localizar(prep, "espectando"):
+            self._ciclos_fim += 1
+        else:
+            self._ciclos_fim = 0
+        return self._ciclos_fim >= 2
+
     def _tratar_fim(self, prep: Preparado, agora: float) -> bool:
-        if not self.detector.localizar(prep, "fim_partida"):
+        if not self.detector.localizar(prep, "fim_partida") and not self._fim_inferido(prep):
             return False
         de_novo = self.detector.localizar(prep, "jogar_novamente")
         if de_novo:
@@ -356,6 +373,8 @@ class Maquina:
     def _tratar_onibus(self, prep: Preparado, agora: float) -> None:
         if self._salto_agendado or self.fase not in (Fase.LOBBY, Fase.FILA, Fase.EM_PARTIDA):
             return
+        if self.fase == Fase.LOBBY and self.detector.por_texto("pular_onibus"):
+            return  # "PULAR" escrito no lobby (vídeos, avisos) não é o ônibus
         if not self.detector.localizar(prep, "pular_onibus"):
             return
         if self.fase == Fase.LOBBY:
@@ -395,9 +414,9 @@ class Maquina:
             self._iniciar_saida(agora, "todos os companheiros eliminados, sobrou só o bot")
 
     def _iniciar_saida(self, agora: float, motivo: str) -> None:
-        if not (self.detector.tem("sair_partida") and self.detector.tem("confirmar_sair")):
+        if not (self.detector.disponivel("sair_partida") and self.detector.disponivel("confirmar_sair")):
             self._avisar_uma_vez("saida_sem_template", "Não dá para sair pelo menu: faltam os "
-                                 "templates sair_partida e/ou confirmar_sair.")
+                                 "templates sair_partida e/ou confirmar_sair (e a leitura de texto está desligada).")
             self._saida_bloqueada_ate = agora + BLOQUEIO_SAIDA_S
             return
         self.log.info(f"Saindo da partida: {motivo}.")

@@ -151,8 +151,12 @@ def criar_app(base: Path, armazem: ArmazemConfig | None = None,
         for info in catalogo.como_dicts():
             arq = motor.pasta_templates / f"{info['nome']}.png"
             existe = arq.is_file()
+            cfg_textos = armazem.atual.textos
             info.update(configurado=existe, versao=int(arq.stat().st_mtime) if existe else 0,
-                        chance=catalogo.CHANCES.get(info["nome"]))
+                        chance=catalogo.CHANCES.get(info["nome"]),
+                        por_texto=(not existe and cfg_textos.ativo
+                                   and bool(cfg_textos.padroes.get(info["nome"]))),
+                        textos=cfg_textos.padroes.get(info["nome"], []))
             itens.append(info)
         return itens
 
