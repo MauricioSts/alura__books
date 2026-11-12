@@ -49,6 +49,7 @@ class Roteiro:
     def __init__(self, tmp_path):
         self.leitor = LeitorFixo()
         self.cfg = Config()
+        self.cfg.navegacao.ativa = False  # navegação tem testes próprios
         self.cfg.automacao.tempo_max_partida_min = 1
         self.det = Detector(tmp_path / "vazia", leitor=self.leitor, padroes=self.cfg.textos.padroes)
         self.entrada = EntradaSimulada()

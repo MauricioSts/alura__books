@@ -158,3 +158,37 @@ def achar_menu_sanduiche(imagem: np.ndarray) -> tuple[int, int, float] | None:
         return None
     # Mais de um: o mais alto na tela (menus ficam em cima).
     return min(candidatos, key=lambda c: (c[1] // max(1, int(altura_tela * 0.05)), -c[2]))
+
+
+def na_tempestade(imagem: np.ndarray) -> bool:
+    """Dentro da tempestade a tela fica arroxeada, sobretudo nas bordas."""
+    pequena = cv2.resize(imagem, (160, 90), interpolation=cv2.INTER_AREA)
+    hsv = cv2.cvtColor(pequena, cv2.COLOR_BGR2HSV)
+    borda = np.ones((90, 160), bool)
+    borda[15:75, 25:135] = False
+    roxo = cv2.inRange(hsv, np.array((125, 70, 50)), np.array((165, 255, 255))) > 0
+    return float(roxo[borda].mean()) >= 0.45
+
+
+def achar_zona_segura(imagem: np.ndarray) -> tuple[int, int, int] | None:
+    """Com o mapa aberto: o círculo branco da próxima zona segura. Devolve (x, y, raio)."""
+    cinza = cv2.cvtColor(imagem, cv2.COLOR_BGR2GRAY) if imagem.ndim == 3 else imagem
+    altura = cinza.shape[0]
+    # Só o traço quase branco do círculo; o resto do mapa fica escuro.
+    _, branco = cv2.threshold(cinza, 225, 255, cv2.THRESH_BINARY)
+    branco = cv2.GaussianBlur(branco, (5, 5), 0)
+    circulos = cv2.HoughCircles(branco, cv2.HOUGH_GRADIENT, dp=1.5, minDist=altura // 4,
+                                param1=120, param2=40,
+                                minRadius=int(altura * 0.03), maxRadius=int(altura * 0.45))
+    if circulos is None:
+        return None
+    melhor, melhor_nota = None, 0.0
+    for x, y, r in np.round(circulos[0]).astype(int):
+        # Confere que é um anel de verdade: boa parte da circunferência é branca.
+        angulos = np.linspace(0, 2 * np.pi, 72, endpoint=False)
+        px = np.clip((x + r * np.cos(angulos)).astype(int), 0, cinza.shape[1] - 1)
+        py = np.clip((y + r * np.sin(angulos)).astype(int), 0, cinza.shape[0] - 1)
+        nota = float((branco[py, px] > 60).mean())
+        if nota > melhor_nota:
+            melhor, melhor_nota = (int(x), int(y), int(r)), nota
+    return melhor if melhor_nota >= 0.6 else None

@@ -10,8 +10,10 @@ import random
 import re
 from typing import Callable
 
+from .captura import Quadro
 from .entrada import Entrada
 from .texto import Linha
+from .visao import achar_zona_segura
 
 DISTANCIA = re.compile(r"^(\d{1,4})M$")
 
@@ -39,6 +41,9 @@ class Navegador:
         self._tentativas = 0
         self._dims: tuple[int, int, int, int] | None = None
         self._proximo_pulo = 0.0
+        self._procurando = False   # mapa aberto, esperando um print para achar a zona segura
+        self._prazo = 0.0
+        self.ultima_marcacao = -1e9
 
     @property
     def cfg(self):
@@ -46,39 +51,67 @@ class Navegador:
 
     @property
     def marcando(self) -> bool:
-        return bool(self._agenda)
+        return bool(self._agenda) or self._procurando
 
     # ------------------------------------------------------------------ marcação
     def agendar_marcacao(self, quando: float, dims: tuple[int, int, int, int] | None,
-                         nova: bool = True) -> None:
-        """Abre o mapa, clica no centro (marca) e fecha, em passos com pequenas pausas."""
+                         nova: bool = True, zona: bool | None = None) -> None:
+        """Abre o mapa, marca (centro da zona segura ou meio do mapa) e fecha, em passos com pausas."""
         if not self.cfg.ativa or dims is None:
             return
         if nova:
             self._tentativas = 0
+        zona = self.cfg.seguir_zona if zona is None else zona
         self._tentativas += 1
         self._dims = dims
         self._dist = None
         self._sem_alvo = 0
-        w, h, ox, oy = dims
-        cx = ox + int(self.cfg.centro_mapa[0] * w)
-        cy = oy + int(self.cfg.centro_mapa[1] * h)
+        self.ultima_marcacao = quando
         tecla = self.cfg.tecla_mapa
-        botao = self.cfg.botao_marcar
+
+        def olhar_mapa():
+            if zona:
+                self._procurando = True
+                self._prazo = quando + 4.0
+                self._agenda.append((self._prazo, lambda: self._sem_zona(self._prazo)))
+            else:
+                self._marcar_em(self._centro_do_mapa(), quando + 1.3, "meio do mapa")
+
+        self._agenda = [(quando, lambda: self.entrada.tocar(tecla)), (quando + 1.3, olhar_mapa)]
+
+    def _centro_do_mapa(self) -> tuple[int, int]:
+        w, h, ox, oy = self._dims
+        return ox + int(self.cfg.centro_mapa[0] * w), oy + int(self.cfg.centro_mapa[1] * h)
+
+    def _marcar_em(self, ponto: tuple[int, int], agora: float, oque: str) -> None:
+        tecla = self.cfg.tecla_mapa
 
         def concluir():
             self.ativo = True
-            self.log.info("Meio do mapa marcado: seguindo a marcação.")
+            self.log.info(f"Marcado o {oque}: seguindo a marcação.")
 
-        self._agenda = [
-            (quando, lambda: self.entrada.tocar(tecla)),
-            (quando + 1.3, lambda: self.entrada.clicar(cx, cy, botao)),
-            (quando + 1.9, lambda: self.entrada.tocar(tecla)),
-            (quando + 2.4, concluir),
-        ]
+        self.entrada.clicar(ponto[0], ponto[1], self.cfg.botao_marcar)
+        self._agenda = [(agora + 0.6, lambda: self.entrada.tocar(tecla)), (agora + 1.1, concluir)]
+
+    def _sem_zona(self, agora: float) -> None:
+        if self._procurando:
+            self._procurando = False
+            self._marcar_em(self._centro_do_mapa(), agora, "meio do mapa (zona segura não achada)")
+
+    def ver_mapa(self, quadro: Quadro, agora: float) -> None:
+        """Com o mapa aberto: acha o círculo branco da zona segura e marca o centro dele."""
+        if not self._procurando:
+            return
+        zona = achar_zona_segura(quadro.imagem)
+        if zona is None:
+            return
+        self._procurando = False
+        x, y, _ = zona
+        self._marcar_em((x + quadro.offset_x, y + quadro.offset_y), agora, "centro da zona segura")
 
     def cancelar_marcacao(self) -> None:
         self._agenda = []
+        self._procurando = False
 
     def passo_agenda(self, agora: float) -> bool:
         """Executa os passos vencidos da marcação. True enquanto a marcação está em andamento."""
@@ -145,6 +178,7 @@ class Navegador:
     def parar(self, soltar: bool = True) -> None:
         self.ativo = False
         self._agenda = []
+        self._procurando = False
         if soltar:
             self.entrada.tecla_cima("w")
             self.entrada.tecla_cima(self.obter_cfg().movimento.tecla_correr)

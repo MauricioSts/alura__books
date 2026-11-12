@@ -23,6 +23,8 @@ class Partida:
     def __init__(self, tmp_path, **nav):
         self.leitor = LeitorFixo()
         self.cfg = Config()
+        self.cfg.navegacao.seguir_zona = False  # os testes de zona ligam explicitamente
+        self.cfg.navegacao.intervalo_zona_s = 600
         for k, v in nav.items():
             setattr(self.cfg.navegacao, k, v)
         self.det = Detector(tmp_path / "vazia", leitor=self.leitor, padroes=self.cfg.textos.padroes)

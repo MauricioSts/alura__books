@@ -29,7 +29,7 @@ from .foco import Foco
 from .navegacao import Navegador
 from .recompensas import PIRATA, ArquivoRecompensas
 from .registro import Registro
-from .visao import achar_menu_sanduiche, contar_companheiros_vivos, diferenca, miniatura_cenario
+from .visao import achar_menu_sanduiche, contar_companheiros_vivos, diferenca, miniatura_cenario, na_tempestade
 
 
 class Fase(str, Enum):
@@ -66,6 +66,7 @@ class Maquina:
         self.movimento = GerenciadorMovimento(entrada, cfg.movimento, self.rng)
         self.nav = Navegador(entrada, lambda: self.cfg, registro, self.rng)
         self._dims: tuple[int, int, int, int] | None = None
+        self._ciclos_tempestade = 0
 
         self.fase = Fase.LOBBY
         self.pausado = False
@@ -181,7 +182,8 @@ class Maquina:
         altura, largura = quadro.imagem.shape[:2]
         self._dims = (largura, altura, quadro.offset_x, quadro.offset_y)
         if self.nav.marcando:
-            return  # mapa aberto marcando o centro: nada de clique até terminar
+            self.nav.ver_mapa(quadro, agora)
+            return  # mapa aberto marcando: nada de clique até terminar
         prep = self.detector.preparar(quadro)
 
         if self._depois_pendente:
@@ -223,6 +225,7 @@ class Maquina:
                 elif self._esperou_reinicio_demais(prep, agora):
                     return
 
+        self._checar_zona(quadro, agora)
         if self.nav.ativo and self.fase in (Fase.PLANANDO, Fase.EM_PARTIDA):
             if self.detector.leitor is None:
                 self._avisar_uma_vez("nav_sem_texto", "Seguir a marcação precisa da leitura de texto ligada.")
@@ -467,6 +470,26 @@ class Maquina:
             self._iniciar_saida(agora, f"esperando reinício há mais de {limite / 60:g} min")
             return self.fase == Fase.SAINDO
         return False
+
+    def _checar_zona(self, quadro: Quadro, agora: float) -> None:
+        """Remarca a zona segura de tempos em tempos e na hora em que entrar na tempestade."""
+        nav = self.cfg.navegacao
+        if not (nav.ativa and nav.seguir_zona) or self.fase not in (Fase.PLANANDO, Fase.EM_PARTIDA):
+            self._ciclos_tempestade = 0
+            return
+        self._ciclos_tempestade = self._ciclos_tempestade + 1 if na_tempestade(quadro.imagem) else 0
+        desde = agora - self.nav.ultima_marcacao
+        motivo = None
+        if self._ciclos_tempestade >= 2 and desde >= 20:
+            motivo = "Dentro da tempestade: marcando a zona segura."
+        elif desde >= nav.intervalo_zona_s:
+            motivo = "Conferindo a zona segura no mapa."
+        if motivo:
+            self._ciclos_tempestade = 0
+            self.log.info(motivo)
+            self.nav.parar(soltar=False)
+            self._interromper()
+            self.nav.agendar_marcacao(agora + 0.2, self._dims)
 
     def _renascer(self, agora: float) -> None:
         """O espectador sumiu por 2 ciclos: o bot foi revivido e cai do céu de novo."""
