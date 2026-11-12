@@ -6,6 +6,7 @@ procura inimigos, constrói ou segue jogadores.
 from __future__ import annotations
 
 import random
+from typing import Callable
 
 from .config import Movimento
 from .entrada import Entrada
@@ -227,6 +228,74 @@ class Olhar(Comportamento):
 CLASSES = {c.nome: c for c in (Esconder, Reposicionar, Rondar, Coletar, Olhar, Atirar)}
 
 
+class Contorno:
+    """Manobra para contornar uma estrutura quando o bot fica preso.
+
+    Recua (S), pula duas vezes (o jogo escala bordas baixas ao pular contra elas) e anda
+    na diagonal para um lado. Se ficar preso de novo logo em seguida, tenta o outro lado
+    virando 90°; na terceira, dá meia-volta.
+    """
+
+    def __init__(self, entrada: Entrada, pixels_por_grau: Callable[[], float], rng: random.Random):
+        self.entrada = entrada
+        self.ppg = pixels_por_grau
+        self.rng = rng
+        self._passos: list[tuple[float, Callable[[], None]]] = []
+        self._seguidos = 0
+        self._ultimo_fim = -1e9
+        self._lado = "a"
+
+    @property
+    def ativo(self) -> bool:
+        return bool(self._passos)
+
+    def iniciar(self, agora: float) -> None:
+        self._seguidos = self._seguidos + 1 if agora - self._ultimo_fim <= 6 else 1
+        if self._seguidos == 1:
+            self._lado = self.rng.choice(("a", "d"))
+        else:
+            self._lado = "d" if self._lado == "a" else "a"
+        giro = 0.0
+        if self._seguidos == 2:
+            giro = 90 if self._lado == "d" else -90
+        elif self._seguidos >= 3:
+            giro = 180
+            self._seguidos = 0
+        lado = self._lado
+
+        def recuar():
+            for tecla in ("w", "a", "s", "d"):
+                self.entrada.tecla_cima(tecla)
+            self.entrada.tecla_baixo("s")
+
+        def contornar():
+            self.entrada.tecla_cima("s")
+            if giro:
+                self.entrada.mover_mouse_rel(giro * self.ppg(), 0)
+            self.entrada.tocar("space")
+            self.entrada.tecla_baixo("w")
+            self.entrada.tecla_baixo(lado)
+
+        self._passos = [
+            (agora, recuar),
+            (agora + 0.45, contornar),
+            (agora + 0.65, lambda: self.entrada.tocar("space")),
+            (agora + 1.6, lambda: self.entrada.tecla_cima(lado)),
+        ]
+
+    def passo(self, agora: float) -> bool:
+        """Executa a manobra. True enquanto ela está em andamento."""
+        while self._passos and agora >= self._passos[0][0]:
+            _, acao = self._passos.pop(0)
+            acao()
+            if not self._passos:
+                self._ultimo_fim = agora
+        return self.ativo
+
+    def cancelar(self) -> None:
+        self._passos = []
+
+
 class GerenciadorMovimento:
     """Sorteia um comportamento por vez e o executa até a duração sorteada acabar."""
 
@@ -237,6 +306,7 @@ class GerenciadorMovimento:
         self.postura = Postura(entrada, cfg)
         self.atual: Comportamento | None = None
         self._fim = 0.0
+        self.contorno = Contorno(entrada, lambda: self.cfg.pixels_por_grau, self.rng)
 
     @property
     def nome_atual(self) -> str:
@@ -247,8 +317,9 @@ class GerenciadorMovimento:
         return bool(self.atual and self.atual.anda)
 
     def desviar(self, agora: float) -> None:
-        if self.atual:
-            self.atual.desviar(agora)
+        if self.atual and self.atual.anda:
+            self.entrada.mouse_cima()
+            self.contorno.iniciar(agora)
 
     def _sortear(self) -> tuple[Comportamento, float]:
         nomes = list(CLASSES)
@@ -264,6 +335,8 @@ class GerenciadorMovimento:
 
     def passo(self, agora: float) -> str | None:
         """Avança o comportamento atual. Devolve o nome quando um novo começa."""
+        if self.contorno.passo(agora):
+            return None  # contornando um obstáculo: o comportamento espera
         novo = None
         if self.atual is None or agora >= self._fim:
             if self.atual:
@@ -278,6 +351,7 @@ class GerenciadorMovimento:
     def abandonar(self) -> None:
         """Interrompe sem enviar nenhum toque; quem chama solta as teclas."""
         self.atual = None
+        self.contorno.cancelar()
 
     def nova_partida(self) -> None:
         self.atual = None

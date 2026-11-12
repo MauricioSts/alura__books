@@ -66,7 +66,7 @@ def test_depois_do_salto_marca_o_centro_da_zona_segura(tmp_path):
     p.animar(2.5 + 1.4)       # abriu o mapa
     assert p.m.nav.marcando
     p.tick(img=mapa((1100, 480), 180), dt=0.1)
-    cliques = [a for a in p.entrada.acoes if a[0] == "clicar"]
+    cliques = [a for a in p.entrada.acoes if a[0] == "clicar_meio"]
     assert cliques and abs(cliques[-1][1] - 1100) <= 8 and abs(cliques[-1][2] - 480) <= 8
     p.animar(2)
     assert p.m.nav.ativo and not p.m.nav.marcando
@@ -79,7 +79,7 @@ def test_sem_zona_no_mapa_marca_o_meio(tmp_path):
     p.animar(2.5 + 1.4)
     p.tick(dt=0.1)            # tela sem círculo
     p.animar(5)
-    assert ("clicar", 960, 540) in p.entrada.acoes and p.m.nav.ativo
+    assert ("clicar_meio", 960, 540) in p.entrada.acoes and p.m.nav.ativo
 
 
 def test_remarca_de_tempos_em_tempos(tmp_path):
@@ -139,3 +139,17 @@ def test_pesos_antigos_padrao_viram_os_novos(tmp_path):
     editado = dict(antigo, esconder={"peso": 9, "duracao_min_s": 4, "duracao_max_s": 10})
     arq.write_text(json.dumps({"movimento": editado}), encoding="utf-8")
     assert ArmazemConfig(arq).atual.movimento.esconder.peso == 9
+
+
+def test_padroes_antigos_errados_sao_atualizados(tmp_path):
+    arq = tmp_path / "config.json"
+    arq.write_text(json.dumps({
+        "salto": {"atraso_min_s": 28, "atraso_max_s": 40},
+        "navegacao": {"botao_marcar": "esquerdo"},
+        "movimento": {"tecla_correr": "shift"},
+    }), encoding="utf-8")
+    cfg = ArmazemConfig(arq).atual
+    assert (cfg.salto.atraso_min_s, cfg.salto.atraso_max_s) == (3, 10)
+    assert cfg.navegacao.botao_marcar == "meio" and cfg.movimento.tecla_correr == ""
+    arq.write_text(json.dumps({"salto": {"atraso_min_s": 20, "atraso_max_s": 25}}), encoding="utf-8")
+    assert ArmazemConfig(arq).atual.salto.atraso_min_s == 20  # editado à mão: mantido

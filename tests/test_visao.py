@@ -149,8 +149,13 @@ def test_preso_andando_pula_e_muda_de_direcao(tmp_path):
     tick_imagem(b, parada)
     msgs = [l["msg"] for l in b.registro.linhas()]
     assert any("Preso em obstáculo" in m_ for m_ in msgs)
-    assert ("tocar", "space") in b.entrada.acoes
-    assert any(a[0] == "mover" and abs(a[1]) >= 90 * b.cfg.movimento.pixels_por_grau for a in b.entrada.acoes)
+    b.entrada.acoes.clear()
+    b.animar(2)
+    acoes = b.entrada.acoes
+    # Contorno: recua (S), pula e anda na diagonal para um lado.
+    assert ("segurar", "s") in acoes and ("tocar", "space") in acoes and ("segurar", "w") in acoes
+    assert any(a in acoes for a in (("segurar", "a"), ("segurar", "d")))
+    assert acoes.index(("segurar", "s")) < acoes.index(("tocar", "space"))
 
 
 def test_andando_de_verdade_nao_e_preso(tmp_path):
@@ -185,3 +190,25 @@ def test_regiao_antiga_padrao_e_migrada_mas_regiao_editada_nao(tmp_path):
         assert ArmazemConfig(arq).atual.deteccao.regiao_squad == REGIAO
     arq.write_text(json.dumps({"deteccao": {"regiao_squad": [0.1, 0.1, 0.2, 0.3]}}), encoding="utf-8")
     assert ArmazemConfig(arq).atual.deteccao.regiao_squad == [0.1, 0.1, 0.2, 0.3]
+
+
+def test_contorno_troca_de_lado_e_depois_da_meia_volta():
+    import random as _r
+    from wheres_the_duck.comportamentos import Contorno
+    from wheres_the_duck.entrada import EntradaSimulada
+
+    e = EntradaSimulada()
+    c = Contorno(e, lambda: 10.0, _r.Random(1))
+    t = 0.0
+    lados, giros = [], []
+    for _ in range(3):
+        e.acoes.clear()
+        c.iniciar(t)
+        while c.passo(t):
+            t += 0.1
+        lados.append(next(a[1] for a in e.acoes if a[0] == "segurar" and a[1] in "ad"))
+        giros.append(sum(a[1] for a in e.acoes if a[0] == "mover"))
+        t += 1.0  # fica preso de novo logo em seguida
+    assert lados[0] != lados[1]
+    assert giros[0] == 0 and abs(giros[1]) == 900 and giros[2] == 1800
+    assert not e.teclas_pressionadas - {"w"}

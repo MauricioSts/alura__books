@@ -37,7 +37,7 @@ class Entrada(ABC):
         return self._mouse_preso
 
     def tecla_baixo(self, tecla: str) -> None:
-        if tecla not in self._teclas:
+        if tecla and tecla not in self._teclas:
             self._teclas.add(tecla)
             self._baixo(tecla)
 
@@ -47,7 +47,8 @@ class Entrada(ABC):
             self._cima(tecla)
 
     def tocar(self, tecla: str) -> None:
-        self._tocar(tecla)
+        if tecla:
+            self._tocar(tecla)
 
     def clicar(self, x: int, y: int, botao: str = "esquerdo") -> None:
         self._clicar(int(x), int(y), botao)
@@ -90,7 +91,7 @@ class EntradaSimulada(Entrada):
     def _cima(self, tecla): self._anotar("soltar", tecla)
     def _tocar(self, tecla): self._anotar("tocar", tecla)
     def _clicar(self, x, y, botao="esquerdo"):
-        self._anotar("clicar" if botao == "esquerdo" else "clicar_direito", x, y)
+        self._anotar({"esquerdo": "clicar", "direito": "clicar_direito", "meio": "clicar_meio"}[botao], x, y)
     def _mouse(self, baixo): self._anotar("mouse_baixo" if baixo else "mouse_cima")
     def _mover_rel(self, dx, dy): self.acoes.append(("mover", dx, dy))  # fora do log: é muito frequente
 
@@ -117,7 +118,7 @@ class EntradaDireta(Entrada):
     def _clicar(self, x, y, botao="esquerdo"):
         self._pdi.moveTo(x, y)
         time.sleep(0.08)
-        self._pdi.click(button="right" if botao == "direito" else "left")
+        self._pdi.click(button={"direito": "right", "meio": "middle"}.get(botao, "left"))
 
     def _mouse(self, baixo):
         (self._pdi.mouseDown if baixo else self._pdi.mouseUp)()

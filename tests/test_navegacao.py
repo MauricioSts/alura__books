@@ -60,7 +60,7 @@ def test_depois_do_salto_abre_o_mapa_marca_o_centro_e_fecha(tmp_path):
     p.animar(5)
     acoes = p.entrada.acoes
     i = acoes.index(("tocar", "m"))
-    assert acoes[i + 1] == ("clicar", 960, 540) and acoes[i + 2] == ("tocar", "m")
+    assert acoes[i + 1] == ("clicar_meio", 960, 540) and acoes[i + 2] == ("tocar", "m")
     assert p.m.nav.ativo and p.m.fase == Fase.PLANANDO
 
 
@@ -71,7 +71,7 @@ def test_nada_de_clique_de_interface_enquanto_o_mapa_esta_aberto(tmp_path):
     p.animar(1.5)
     assert p.m.nav.marcando
     p.tick(Linha("CONTINUAR", 900, 600, 160, 40, 0.9), dt=0.1)
-    assert not any(a[0] == "clicar" and a[1:] != (960, 540) for a in p.entrada.acoes)
+    assert not any(a[0] == "clicar" for a in p.entrada.acoes[2:])
 
 
 def test_vira_para_o_lado_da_marcacao_e_para_ao_chegar(tmp_path):
@@ -119,7 +119,21 @@ def test_no_chao_corre_ate_a_marcacao(tmp_path):
     p.tick(distancia(500, 960))
     assert p.m.fase == Fase.EM_PARTIDA and p.m.nav.ativo
     p.animar(1)
-    assert {"w", "shift"} <= p.entrada.teclas_pressionadas
+    assert "w" in p.entrada.teclas_pressionadas
+    assert "shift" not in p.entrada.teclas_pressionadas  # "correr por padrão": Shift andaria devagar
+
+
+def test_sem_marcacao_visivel_tenta_os_outros_botoes_e_lembra_o_que_funcionou(tmp_path):
+    p = Partida(tmp_path, ciclos_sem_alvo=2, tentativas=3)
+    p.saltar()
+    p.animar(5)
+    for _ in range(2):
+        p.tick()          # nada de distância na tela: o botão do meio não marcou
+    p.animar(3)
+    assert ("clicar", 960, 540) in p.entrada.acoes  # segunda tentativa: esquerdo
+    p.tick(distancia(800, 960))
+    assert p.m.nav._botao == "esquerdo"
+    assert any("botão esquerdo" in l["msg"] for l in p.m.log.linhas())
 
 
 def test_perde_a_marcacao_marca_de_novo_e_depois_desiste(tmp_path):
@@ -147,7 +161,7 @@ def test_revivido_tambem_marca_o_centro(tmp_path):
     assert p.m.fase == Fase.PLANANDO
     p.entrada.acoes.clear()
     p.animar(5)
-    assert ("tocar", "m") in p.entrada.acoes and ("clicar", 960, 540) in p.entrada.acoes
+    assert ("tocar", "m") in p.entrada.acoes and ("clicar_meio", 960, 540) in p.entrada.acoes
 
 
 def test_botao_direito_e_centro_configuraveis(tmp_path):

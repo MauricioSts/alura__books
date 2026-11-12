@@ -53,7 +53,7 @@ O bot **não mira, não procura inimigos, nunca constrói e nunca segue jogadore
 
 **Ir até a zona segura:** logo depois do salto do ônibus e logo depois de ser revivido, ainda no ar, o bot abre o mapa (M), clica no centro da zona segura (ou do mapa) para marcar e fecha. A marcação aparece na tela com a distância ("350 m"); a cada ciclo ele lê esse texto e vira a câmera na direção dele. Assim plana e depois corre (Shift+W) até o meio, em vez de ir reto para o mar. A menos de 60 m ele volta aos comportamentos normais. Se perder a marcação de vista por 8 ciclos, marca de novo (no máximo 2 vezes). Ajustes em **Automação → Ir até o meio do mapa**:
 
-- se o clique não marcar nada, troque para "Marcar com o botão direito";
+- o botão de marcar é o do meio (padrão do jogo); se a marcação não aparecer, o bot tenta o esquerdo e o direito sozinho;
 - se a marca cair fora do centro da ilha, ajuste "Centro da ilha no mapa" (x e y, em frações da tela com o mapa aberto).
 
 **Esperando reinício:** morto, com "Realocando… / Esperando para ser reiniciado" na tela por mais de 3 minutos (configurável em Automação), o bot volta ao lobby pelo menu.
@@ -123,6 +123,25 @@ Há duas formas de obter o `WheresTheDuck.exe`:
 Coloque o .exe numa pasta só dele: `config.json`, `templates\`, `capturas\`, `dados\` e `logs\` são criados ao lado do executável. A janela usa o WebView2, que já vem no Windows 10/11 atualizado.
 
 O executável não é assinado. O Windows SmartScreen vai avisar na primeira vez ("Mais informações" → "Executar assim mesmo") e alguns antivírus desconfiam de executáveis feitos com PyInstaller. O app não faz nada para contornar isso; se preferir, use o `iniciar.bat`, que roda direto do código.
+
+## Comandos do jogo que o bot usa
+
+Baseado nos controles padrão do Fortnite no PC (confira em Configurações → Controles; se os seus forem outros, ajuste em Automação):
+
+| Ação | Tecla padrão | Como o bot usa |
+|---|---|---|
+| Andar | W A S D | Movimento, contorno de obstáculos |
+| Correr | Correr por padrão (ligado) | O bot não segura Shift: com "Correr por padrão", Shift faz andar devagar |
+| Pular / escalar | Espaço | Pular, abrir o planador e escalar bordas baixas ao pular contra elas |
+| Agachar / deslizar | Ctrl esquerdo | Esconder e rondar |
+| Mapa | M | Abrir o mapa para marcar a zona segura |
+| Marcar no mapa | Botão do meio do mouse | Marcar o centro da zona; se não aparecer marcação, tenta o esquerdo e o direito e guarda o que funcionou |
+| Picareta | F | Coletar |
+| Armas | 1 a 5 | Atirar a esmo |
+
+**Contornar estruturas:** quando o cenário para de mudar enquanto ele anda (preso), o bot recua (S), pula duas vezes (para escalar se for baixo) e anda na diagonal para um lado. Se ficar preso de novo em seguida, tenta o outro lado virando 90°; na terceira vez, dá meia-volta.
+
+**Salto do ônibus:** ele salta 3 a 10 s depois do aviso (antes saltava no fim da rota e acabava longe da zona, morrendo no gás) e plana já na direção da zona segura marcada.
 
 ## Configurando o jogo
 

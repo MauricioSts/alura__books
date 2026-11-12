@@ -104,7 +104,7 @@ export default function Automacao() {
 
       <Secao titulo="Salto e pouso" nota="O bot espera um tempo aleatório para saltar no trecho final da rota, vira a câmera para um lado e plana para longe do ônibus.">
         <div className="grade">
-          <Campo rotulo="Atraso mínimo do salto" ajuda="Contado a partir do aviso de pular.">
+          <Campo rotulo="Atraso mínimo do salto" ajuda="Contado a partir do aviso de pular. Saltar cedo e planar até a zona evita morrer no gás.">
             <Numero valor={s.atraso_min_s} min={0} max={120} aoMudar={(v) => definir("salto.atraso_min_s", v)} sufixo="s" />
           </Campo>
           <Campo rotulo="Atraso máximo do salto">
@@ -147,9 +147,11 @@ export default function Automacao() {
             <Numero valor={nv.chegada_m} min={10} max={500} aoMudar={(v) => definir("navegacao.chegada_m", v)} sufixo="m" />
           </Campo>
         </div>
+        <p className="nota" style={{ marginBottom: 6 }}>Botão para marcar no mapa (padrão do jogo: botão do meio, a roda). Se a marcação não aparecer, o bot tenta os outros sozinho.</p>
         <div className="segmentos largos">
-          <button className={nv.botao_marcar === "esquerdo" ? "ativo" : ""} onClick={() => definir("navegacao.botao_marcar", "esquerdo")}>Marcar com o botão esquerdo</button>
-          <button className={nv.botao_marcar === "direito" ? "ativo" : ""} onClick={() => definir("navegacao.botao_marcar", "direito")}>Marcar com o botão direito</button>
+          {([["meio", "Botão do meio"], ["esquerdo", "Esquerdo"], ["direito", "Direito"]] as const).map(([id, rotulo]) => (
+            <button key={id} className={nv.botao_marcar === id ? "ativo" : ""} onClick={() => definir("navegacao.botao_marcar", id)}>{rotulo}</button>
+          ))}
         </div>
       </Secao>
 
@@ -185,7 +187,7 @@ export default function Automacao() {
           <Campo rotulo="Tecla de agachar">
             <input type="text" value={m.tecla_agachar} onChange={(e) => definir("movimento.tecla_agachar", e.target.value.trim().toLowerCase())} />
           </Campo>
-          <Campo rotulo="Tecla de correr">
+          <Campo rotulo="Tecla de correr" ajuda="Deixe vazio se “Correr por padrão” estiver ligado no jogo (padrão atual): segurar Shift faria andar devagar.">
             <input type="text" value={m.tecla_correr} onChange={(e) => definir("movimento.tecla_correr", e.target.value.trim().toLowerCase())} />
           </Campo>
           <Campo rotulo="Teclas das armas" ajuda="Separadas por espaço. O “atirar” escolhe uma delas.">

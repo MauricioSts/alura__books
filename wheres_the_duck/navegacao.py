@@ -11,6 +11,7 @@ import re
 from typing import Callable
 
 from .captura import Quadro
+from .comportamentos import Contorno
 from .entrada import Entrada
 from .texto import Linha
 from .visao import achar_zona_segura
@@ -44,6 +45,11 @@ class Navegador:
         self._procurando = False   # mapa aberto, esperando um print para achar a zona segura
         self._prazo = 0.0
         self.ultima_marcacao = -1e9
+        self.contorno = Contorno(entrada, lambda: self.obter_cfg().movimento.pixels_por_grau, rng)
+        # Botão que funcionou para marcar; se a marcação não aparece, tenta o próximo.
+        self._botao: str | None = None
+        self._botao_usado = ""
+        self._marcacao_vista = False
 
     @property
     def cfg(self):
@@ -83,6 +89,13 @@ class Navegador:
         w, h, ox, oy = self._dims
         return ox + int(self.cfg.centro_mapa[0] * w), oy + int(self.cfg.centro_mapa[1] * h)
 
+    def _proximo_botao(self) -> str:
+        ordem = [self.cfg.botao_marcar] + [b for b in ("meio", "esquerdo", "direito") if b != self.cfg.botao_marcar]
+        if self._botao:
+            return self._botao
+        # Cada nova tentativa sem marcação visível usa o botão seguinte.
+        return ordem[(self._tentativas - 1) % len(ordem)]
+
     def _marcar_em(self, ponto: tuple[int, int], agora: float, oque: str) -> None:
         tecla = self.cfg.tecla_mapa
 
@@ -90,7 +103,9 @@ class Navegador:
             self.ativo = True
             self.log.info(f"Marcado o {oque}: seguindo a marcação.")
 
-        self.entrada.clicar(ponto[0], ponto[1], self.cfg.botao_marcar)
+        self._botao_usado = self._proximo_botao()
+        self._marcacao_vista = False
+        self.entrada.clicar(ponto[0], ponto[1], self._botao_usado)
         self._agenda = [(agora + 0.6, lambda: self.entrada.tocar(tecla)), (agora + 1.1, concluir)]
 
     def _sem_zona(self, agora: float) -> None:
@@ -123,7 +138,7 @@ class Navegador:
     # ------------------------------------------------------------------ seguir a marcação
     def atualizar(self, linhas: list[Linha], agora: float) -> None:
         """Chamado a cada ciclo com os textos lidos: vira a câmera para a marcação."""
-        if not self.ativo or self._dims is None:
+        if not self.ativo or self._dims is None or self.contorno.ativo:
             return
         w, h, _, _ = self._dims
         candidatos = distancias_na_tela(linhas, h)
@@ -136,6 +151,8 @@ class Navegador:
         if not candidatos:
             self._sem_alvo += 1
             if self._sem_alvo >= self.cfg.ciclos_sem_alvo:
+                if not self._marcacao_vista and self._botao == self._botao_usado:
+                    self._botao = None  # o botão que funcionava parou: volta a testar
                 if self._tentativas < self.cfg.tentativas:
                     self.log.info("Perdi a marcação de vista: marcando o meio do mapa de novo.")
                     self.parar(soltar=False)
@@ -146,6 +163,11 @@ class Navegador:
             return
         dist, linha = candidatos[0]
         self._sem_alvo = 0
+        if not self._marcacao_vista:
+            self._marcacao_vista = True
+            if self._botao != self._botao_usado:
+                self._botao = self._botao_usado
+                self.log.info(f"Marcação no mapa funciona com o botão {self._botao} do mouse.")
         self._dist = dist
         if dist <= self.cfg.chegada_m:
             self.log.info(f"Cheguei perto do meio do mapa ({dist} m).")
@@ -162,6 +184,8 @@ class Navegador:
 
     def andar(self, agora: float) -> None:
         """No chão: corre para a frente; a direção vem de atualizar()."""
+        if self.contorno.passo(agora):
+            return
         mov = self.obter_cfg().movimento
         self.entrada.tecla_baixo(mov.tecla_correr)
         self.entrada.tecla_baixo("w")
@@ -171,12 +195,11 @@ class Navegador:
             self._proximo_pulo = agora + self.rng.uniform(2, 5)
 
     def desviar(self, agora: float) -> None:
-        self.entrada.tocar("space")
-        graus = self.rng.choice((-1, 1)) * self.rng.uniform(50, 80)
-        self.entrada.mover_mouse_rel(graus * self.obter_cfg().movimento.pixels_por_grau, 0)
+        self.contorno.iniciar(agora)
 
     def parar(self, soltar: bool = True) -> None:
         self.ativo = False
+        self.contorno.cancelar()
         self._agenda = []
         self._procurando = False
         if soltar:

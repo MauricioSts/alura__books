@@ -29,8 +29,9 @@ class Automacao(BaseModel):
 
 
 class Salto(BaseModel):
-    atraso_min_s: float = Field(28, ge=0, le=120)
-    atraso_max_s: float = Field(40, ge=0, le=120)
+    # Saltar logo: planando já na direção da zona segura (saltar no fim da rota deixava o bot no gás).
+    atraso_min_s: float = Field(3, ge=0, le=120)
+    atraso_max_s: float = Field(10, ge=0, le=120)
     angulo_graus: float = Field(90, ge=0, le=180)
     abrir_planador_cedo: bool = True
     # Tempo segurando W depois do salto (o app não enxerga o chão).
@@ -55,7 +56,8 @@ class Movimento(BaseModel):
     pixels_por_grau: float = Field(10, ge=0.5, le=200)
     tecla_agachar: str = "ctrl"
     agachar_alternado: bool = True
-    tecla_correr: str = "shift"
+    # Vazio: o jogo já corre por padrão ("Correr por padrão"); segurar Shift faria andar devagar.
+    tecla_correr: str = ""
     tecla_picareta: str = "f"
     # Teclas das armas no inventário (o "atirar" escolhe uma delas).
     teclas_armas: list[str] = Field(default=["1", "2", "3", "4", "5"], min_length=1, max_length=10)
@@ -83,13 +85,14 @@ class Navegacao(BaseModel):
     tecla_mapa: str = "m"
     # Onde fica o centro da ilha com o mapa aberto, em frações da tela.
     centro_mapa: list[float] = Field(default=[0.5, 0.5], min_length=2, max_length=2)
-    botao_marcar: Literal["esquerdo", "direito"] = "esquerdo"
+    # Padrão do jogo no PC: botão do meio (roda). Se a marcação não aparecer, tenta os outros.
+    botao_marcar: Literal["meio", "esquerdo", "direito"] = "meio"
     chegada_m: int = Field(60, ge=10, le=500)
     # Fugir da tempestade: marca o centro da zona segura (círculo branco no mapa).
     seguir_zona: bool = True
     intervalo_zona_s: float = Field(75, ge=20, le=600)
     ciclos_sem_alvo: int = Field(8, ge=2, le=60)
-    tentativas: int = Field(2, ge=1, le=5)
+    tentativas: int = Field(3, ge=1, le=6)
 
 
 class Deteccao(BaseModel):
@@ -184,6 +187,16 @@ class ArmazemConfig:
             try:
                 dados = json.loads(self.caminho.read_text(encoding="utf-8"))
                 det = dados.get("deteccao") if isinstance(dados, dict) else None
+                # Padrões antigos que estavam errados para o jogo atual: atualiza se não foram mexidos.
+                salto = dados.get("salto") if isinstance(dados, dict) else None
+                if isinstance(salto, dict) and salto.get("atraso_min_s") == 28 and salto.get("atraso_max_s") == 40:
+                    salto.pop("atraso_min_s"), salto.pop("atraso_max_s")
+                nav = dados.get("navegacao") if isinstance(dados, dict) else None
+                if isinstance(nav, dict) and nav.get("botao_marcar") == "esquerdo":
+                    nav.pop("botao_marcar")
+                mov0 = dados.get("movimento") if isinstance(dados, dict) else None
+                if isinstance(mov0, dict) and mov0.get("tecla_correr") == "shift":
+                    mov0.pop("tecla_correr")
                 mov = dados.get("movimento") if isinstance(dados, dict) else None
                 if isinstance(mov, dict) and all(
                         isinstance(mov.get(n), dict) and mov[n].get("peso") == p for n, p in PESOS_ANTIGOS.items()):

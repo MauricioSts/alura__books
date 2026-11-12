@@ -120,7 +120,7 @@ export interface Config {
     ativa: boolean;
     tecla_mapa: string;
     centro_mapa: number[];
-    botao_marcar: "esquerdo" | "direito";
+    botao_marcar: "meio" | "esquerdo" | "direito";
     chegada_m: number;
     ciclos_sem_alvo: number;
     tentativas: number;
