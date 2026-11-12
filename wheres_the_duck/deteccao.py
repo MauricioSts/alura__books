@@ -8,6 +8,8 @@ import cv2
 import numpy as np
 
 from .captura import Quadro
+from .config import BOTOES_TEXTO
+from .texto import LeitorTexto, Linha, compactar, contem, linha_igual
 
 
 @dataclass
@@ -28,13 +30,23 @@ class Preparado:
     escala: float
     offset_x: int
     offset_y: int
+    original: np.ndarray | None = None
+    linhas: list[Linha] | None = None  # OCR feito no máximo uma vez por ciclo, sob demanda
 
 
 class Detector:
-    def __init__(self, pasta: Path, escala: float = 0.5, limiar: float = 0.82):
+    def __init__(self, pasta: Path, escala: float = 0.5, limiar: float = 0.82,
+                 leitor: LeitorTexto | None = None, padroes: dict[str, list[str]] | None = None,
+                 confianca_texto: float = 0.5):
         self.pasta = Path(pasta)
         self.escala = escala
         self.limiar = limiar
+        self.leitor = leitor
+        self.confianca_texto = confianca_texto
+        # Padrões já compactados ("Você encontrou" -> "VOCEENCONTROU").
+        self.padroes = {nome: [c for c in map(compactar, lista) if c]
+                        for nome, lista in (padroes or {}).items()}
+        self.erro_leitura = ""
         self._templates: dict[str, np.ndarray] = {}
         self.recarregar()
 
@@ -69,10 +81,60 @@ class Detector:
     def nomes(self) -> list[str]:
         return list(self._templates)
 
+    def por_texto(self, nome: str) -> bool:
+        """O estado será reconhecido pela leitura de texto (não há template para ele)."""
+        return self.leitor is not None and not self.tem(nome) and bool(self.padroes.get(nome))
+
+    def disponivel(self, nome: str) -> bool:
+        return self.tem(nome) or self.por_texto(nome)
+
     def preparar(self, quadro: Quadro) -> Preparado:
         img = quadro.imagem
         cinza = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
-        return Preparado(self._reduzir(cinza), self.escala, quadro.offset_x, quadro.offset_y)
+        return Preparado(self._reduzir(cinza), self.escala, quadro.offset_x, quadro.offset_y, img)
+
+    # ------------------------------------------------------------------ leitura de texto
+    def ler_textos(self, prep: Preparado) -> list[Linha]:
+        if prep.linhas is None:
+            prep.linhas = []
+            if self.leitor is not None and prep.original is not None:
+                try:
+                    lidas = self.leitor.ler(prep.original)
+                    prep.linhas = [l for l in lidas if l.confianca >= self.confianca_texto]
+                    self.erro_leitura = ""
+                except Exception as erro:  # OCR quebrado nunca derruba o motor
+                    self.erro_leitura = str(erro)
+        return prep.linhas
+
+    def _achado_texto(self, prep: Preparado, nome: str, linha: Linha | None, score: float) -> Achado:
+        if linha is None:
+            h, w = prep.cinza.shape[:2]
+            cx, cy, lw, lh = int(w / 2 / prep.escala), int(h / 2 / prep.escala), 0, 0
+        else:
+            cx, cy = linha.x + linha.largura // 2, linha.y + linha.altura // 2
+            lw, lh = linha.largura, linha.altura
+        return Achado(nome, score, cx + prep.offset_x, cy + prep.offset_y, lw, lh)
+
+    def buscar_texto(self, prep: Preparado, nome: str) -> Achado | None:
+        padroes = self.padroes.get(nome)
+        if not padroes or self.leitor is None:
+            return None
+        linhas = self.ler_textos(prep)
+        if nome in BOTOES_TEXTO:
+            candidatas = [l for l in linhas for p in padroes if linha_igual(l.compacto, p)]
+            if not candidatas:
+                return None
+            # Vários "JOGAR" na tela (aba e botão): o maior texto é o botão.
+            melhor = max(candidatas, key=lambda l: (l.altura, l.confianca))
+            return self._achado_texto(prep, nome, melhor, melhor.confianca)
+        for l in linhas:
+            if any(contem(l.compacto, p) for p in padroes):
+                return self._achado_texto(prep, nome, l, l.confianca)
+        # O texto pode ter sido quebrado em duas linhas ("ACESSO À LOJA" / "PIRATA").
+        juntas = "".join(l.compacto for l in sorted(linhas, key=lambda l: (l.y, l.x)))
+        if any(contem(juntas, p) for p in padroes):
+            return self._achado_texto(prep, nome, None, 0.6)
+        return None
 
     @staticmethod
     def _mapa(cinza: np.ndarray, tpl: np.ndarray) -> np.ndarray | None:
@@ -98,6 +160,9 @@ class Detector:
         return Achado(nome, float(score), cx, cy, int(tw / prep.escala), int(th / prep.escala))
 
     def localizar(self, prep: Preparado, nome: str, limiar: float | None = None) -> Achado | None:
+        """Template recortado tem prioridade; sem ele, procura o texto na tela."""
+        if not self.tem(nome):
+            return self.buscar_texto(prep, nome)
         achado = self.pontuar(prep, nome)
         if achado and achado.score >= (self.limiar if limiar is None else limiar):
             return achado
@@ -139,4 +204,11 @@ class Detector:
             achado = self.pontuar(prep, nome)
             if achado and achado.score >= limiar and achado.score > melhor_score:
                 melhor, melhor_score = nome, achado.score
+        if melhor is None:
+            # Sem template que case: a ordem da lista decide (o mais raro primeiro).
+            for nome in nomes:
+                if self.por_texto(nome):
+                    achado = self.buscar_texto(prep, nome)
+                    if achado:
+                        return nome, achado.score
         return melhor, melhor_score

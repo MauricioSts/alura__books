@@ -68,12 +68,54 @@ class Deteccao(BaseModel):
     titulo_janela: str = "Fortnite"
 
 
+class Textos(BaseModel):
+    """Leitura de textos da tela: substitui os templates que não foram recortados."""
+
+    ativo: bool = True
+    largura_leitura: int = Field(1280, ge=640, le=3840)
+    confianca_minima: float = Field(0.5, ge=0.1, le=1.0)
+    # Para cada estado, os textos (em qualquer caixa, com ou sem acento) que o identificam.
+    padroes: dict[str, list[str]] = Field(default_factory=lambda: {k: list(v) for k, v in PADROES_TEXTO.items()})
+
+
+# Palpites para o jogo em português do Brasil. Edite na tela Detecção se o seu jogo mostrar outro texto.
+PADROES_TEXTO: dict[str, list[str]] = {
+    "jogar": ["JOGAR"],
+    "resgatar": ["RESGATAR"],
+    "resgatar_tudo": ["RESGATAR TUDO"],
+    "fim_partida": ["ESQUADRÃO ELIMINADO", "SQUAD ELIMINADO", "VOCÊ FICOU EM", "SEU ESQUADRÃO FICOU EM"],
+    "jogar_novamente": ["JOGAR NOVAMENTE"],
+    "retornar_lobby": ["RETORNAR AO LOBBY", "VOLTAR AO LOBBY"],
+    "continuar": ["CONTINUAR"],
+    "fechar": ["FECHAR"],
+    "pular_onibus": ["PULAR", "SALTAR", "PULAR DO ÔNIBUS", "SALTAR DO ÔNIBUS"],
+    "sair_partida": ["SAIR DA PARTIDA", "SAIR"],
+    "confirmar_sair": ["CONFIRMAR", "SIM"],
+    "espectando": ["ESPECTANDO", "ASSISTINDO"],
+    "tesouro_encontrado": ["TESOURO ENCONTRADO"],
+    "aviso_encontrou": ["VOCÊ ENCONTROU", "ACESSO DESBLOQUEADO"],
+    "acesso_pirata": ["LOJA PIRATA"],
+    "traje_dourado": ["TRAJE DOURADO"],
+    "veiculo": ["VEÍCULO", "DECALQUE"],
+    "picareta_costas": ["PICARETA", "ACESSÓRIO PARA AS COSTAS", "MOCHILA"],
+    "faixa": ["FAIXA DE IMPROVISO"],
+    "tela_carregamento": ["TELA DE CARREGAMENTO"],
+    "gizmo": ["GIZMO"],
+}
+
+# Botões: a linha lida precisa ser o texto inteiro (evita "JOGAR" casar com "JOGAR NOVAMENTE").
+# Os demais estados basta o texto aparecer em algum lugar da tela.
+BOTOES_TEXTO = {"jogar", "resgatar", "resgatar_tudo", "jogar_novamente", "retornar_lobby",
+                "continuar", "fechar", "pular_onibus", "sair_partida", "confirmar_sair"}
+
+
 class Config(BaseModel):
     porta: int = Field(8765, ge=1024, le=65535)
     automacao: Automacao = Automacao()
     salto: Salto = Salto()
     movimento: Movimento = Movimento()
     deteccao: Deteccao = Deteccao()
+    textos: Textos = Textos()
 
 
 class ArmazemConfig:
