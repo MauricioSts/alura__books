@@ -28,7 +28,8 @@ from .entrada import Entrada
 from .foco import Foco
 from .recompensas import PIRATA, ArquivoRecompensas
 from .registro import Registro
-from .visao import contar_companheiros_vivos, diferenca, linhas_de_barras, miniatura_cenario
+from .visao import (achar_menu_sanduiche, contar_companheiros_vivos, diferenca, linhas_de_barras,
+                    miniatura_cenario)
 
 
 class Fase(str, Enum):
@@ -335,7 +336,7 @@ class Maquina:
     # ------------------------------------------------------------------ telas e botões
     def _fim_inferido(self, prep: Preparado) -> bool:
         """Sem template de fim: Jogar novamente / Retornar ao lobby sem estar espectando, 2 ciclos."""
-        if self.detector.tem("fim_partida") or self.fase in (Fase.LOBBY, Fase.FILA):
+        if self.detector.tem("fim_partida") or self.fase in (Fase.LOBBY, Fase.FILA, Fase.SAINDO):
             self._ciclos_fim = 0
             return False
         botao = self._primeiro(prep, ("jogar_novamente", "retornar_lobby"))
@@ -489,9 +490,9 @@ class Maquina:
             self._iniciar_saida(agora, "todos os companheiros eliminados, sobrou só o bot")
 
     def _iniciar_saida(self, agora: float, motivo: str) -> None:
-        if not (self.detector.disponivel("sair_partida") and self.detector.disponivel("confirmar_sair")):
-            self._avisar_uma_vez("saida_sem_template", "Não dá para sair pelo menu: faltam os "
-                                 "templates sair_partida e/ou confirmar_sair (e a leitura de texto está desligada).")
+        if not self.detector.disponivel("sair_partida"):
+            self._avisar_uma_vez("saida_sem_template", "Não dá para sair pelo menu: falta o template "
+                                 "sair_partida (e a leitura de texto está desligada).")
             self._saida_bloqueada_ate = agora + BLOQUEIO_SAIDA_S
             return
         self.log.info(f"Saindo da partida: {motivo}.")
@@ -501,24 +502,49 @@ class Maquina:
         self._saida_tentativas = 0
         self.entrada.tocar("esc")
 
-    def _passo_saida(self, prep: Preparado, agora: float) -> None:
-        nome, rotulo = (("sair_partida", "Sair"), ("confirmar_sair", "Confirmar"))[self._saida_passo - 1]
-        achado = self.detector.localizar(prep, nome)
+    def _menu_sanduiche(self, prep: Preparado) -> Achado | None:
+        if self.detector.tem("menu_sanduiche"):
+            return self.detector.localizar(prep, "menu_sanduiche")
+        if prep.original is None:
+            return None
+        achado = achar_menu_sanduiche(prep.original)
         if not achado:
+            return None
+        x, y, conf = achado
+        return Achado("menu_sanduiche", conf, x + prep.offset_x, y + prep.offset_y, 0, 0)
+
+    def _passo_saida(self, prep: Preparado, agora: float) -> None:
+        """Depois do ESC: clica no que aparecer, do passo mais adiantado para o mais cedo.
+
+        Confirmar/Sim > Voltar ao lobby (ou Sair da partida) > menu sanduíche (≡).
+        Assim funciona com o botão direto no menu ESC ou escondido no menu sanduíche.
+        """
+        confirmar = self.detector.localizar(prep, "confirmar_sair") if self._saida_passo >= 2 else None
+        voltar = None if confirmar else self.detector.localizar(prep, "sair_partida")
+        menu = None if (confirmar or voltar or self._saida_passo >= 2) else self._menu_sanduiche(prep)
+        alvo, rotulo = ((confirmar, "Confirmar") if confirmar else (voltar, "Voltar ao lobby") if voltar
+                        else (menu, "menu sanduíche") if menu else (None, ""))
+        if alvo is None:
             self._saida_tentativas += 1
+            if self._saida_passo >= 2 and self._saida_tentativas >= 2:
+                # Clicou em Voltar ao lobby e nenhuma confirmação apareceu: a saída já foi.
+                self._encerrar_partida()
+                self.fase = Fase.LOBBY
+                self.log.info("Voltar ao lobby clicado (sem confirmação); aguardando o lobby.")
+                return
             if self._saida_tentativas >= TENTATIVAS_SAIDA:
-                self.log.aviso(f"Botão {rotulo} não apareceu; desistindo da saída por enquanto.")
+                self.log.aviso("Não achei Voltar ao lobby no menu; fechando o menu e tentando mais tarde.")
                 self.entrada.tocar("esc")
                 self.fase = Fase.EM_PARTIDA
                 self._ciclos_sozinho = 0
                 self._saida_bloqueada_ate = agora + BLOQUEIO_SAIDA_S
             return
-        if not self._clicar(achado, agora, rotulo):
+        if not self._clicar(alvo, agora, rotulo):
             return  # ainda no cooldown de clique; tenta no próximo ciclo
         self._saida_tentativas = 0
-        if self._saida_passo == 1:
+        if alvo is voltar:
             self._saida_passo = 2
-        else:
+        elif alvo is confirmar:
             self._encerrar_partida()
             self.fase = Fase.LOBBY
             self.log.info("Saída confirmada; aguardando o lobby.")

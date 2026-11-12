@@ -5,7 +5,7 @@ import { BarraSalvar, Cabecalho, Campo, Chave, Numero, Secao, useConfig } from "
 const ROTULOS_TEXTO: Record<string, string> = {
   jogar: "Botão Jogar", resgatar: "Resgatar", resgatar_tudo: "Resgatar tudo", fim_partida: "Tela de fim",
   jogar_novamente: "Jogar novamente", retornar_lobby: "Retornar ao lobby", continuar: "Continuar",
-  fechar: "Fechar", pular_onibus: "Pular do ônibus", sair_partida: "Sair (menu ESC)",
+  fechar: "Fechar", pular_onibus: "Pular do ônibus", sair_partida: "Voltar ao lobby (menu ESC)",
   confirmar_sair: "Confirmar saída", espectando: "Espectando", tesouro_encontrado: "Tesouro encontrado",
   aviso_encontrou: "Aviso Você encontrou", acesso_pirata: "Acesso à Loja Pirata",
   traje_dourado: "Traje Dourado", veiculo: "Veículo e Decalque", picareta_costas: "Picareta ou Costas",

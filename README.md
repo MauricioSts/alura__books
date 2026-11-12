@@ -17,8 +17,18 @@ Nesta ordem de prioridade:
 5. **Pop-up** com Continuar ou Fechar: clica.
 6. **Aviso de pular do ônibus**: agenda o salto para o trecho final da rota.
 7. **Tempo máximo de partida** (0 = desligado): sai pelo menu ESC.
-8. **Sobrou só o bot vivo**: o app conta as barras de vida e escudo dos colegas na lista da squad (canto inferior esquerdo, ignorando a linha da vida do próprio bot). Se já tinha visto colegas nesta partida e nenhuma barra aparece por 3 ciclos seguidos, sem estar espectando, sai pelo menu ESC (ESC, Sair, Confirmar). Colega derrubado (barra vermelha) ainda conta como vivo. Se você recortar o ícone `companheiro_morto`, a contagem de ícones é usada no lugar das barras.
+8. **Sobrou só o bot vivo**: o app conta as barras de vida e escudo dos colegas na lista da squad (canto inferior esquerdo, ignorando a linha da vida do próprio bot). Se já tinha visto colegas nesta partida e nenhuma barra aparece por 3 ciclos seguidos, sem estar espectando, sai pelo menu ESC (veja "Como ele sai da partida"). Colega derrubado (barra vermelha) ainda conta como vivo. Se você recortar o ícone `companheiro_morto`, a contagem de ícones é usada no lugar das barras.
 9. **Movimento anti-inatividade**, descrito abaixo.
+
+### Como ele sai da partida
+
+Aperta ESC e, a cada ciclo, clica no que estiver na tela, do passo mais adiantado para o mais cedo:
+
+1. **Confirmar / Sim**, só depois de já ter clicado em Voltar ao lobby;
+2. **Voltar ao lobby / Retornar ao lobby / Sair da partida** (lido pelo texto);
+3. **Menu sanduíche (≡)**: reconhecido pelo formato (três tracinhos claros iguais e empilhados), sem recorte.
+
+Ou seja: ESC → ≡ → Voltar ao lobby → Confirmar, e também funciona se o botão aparecer direto no menu ou se não houver confirmação. Se nada disso aparecer em 4 ciclos, ele fecha o menu com ESC e tenta de novo em 60 s. Se o ≡ do seu jogo não for reconhecido, recorte o template opcional `menu_sanduiche`.
 
 ### Salto e pouso
 

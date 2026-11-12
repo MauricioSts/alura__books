@@ -21,13 +21,14 @@ PRINCIPAIS = [
     InfoTemplate("retornar_lobby", "principal", "Botão Retornar ao lobby", "Botão RETORNAR AO LOBBY da tela de fim."),
     InfoTemplate("continuar", "principal", "Botão Continuar", "Botão CONTINUAR de pop-ups."),
     InfoTemplate("pular_onibus", "principal", "Aviso de pular do ônibus", "O aviso de tecla para saltar que aparece quando as portas do ônibus abrem."),
-    InfoTemplate("sair_partida", "principal", "Sair (menu ESC)", "Opção de sair da partida dentro do menu ESC."),
+    InfoTemplate("sair_partida", "principal", "Voltar ao lobby (menu ESC)", "Botão de voltar ao lobby / sair da partida, dentro do menu sanduíche do ESC."),
     InfoTemplate("confirmar_sair", "principal", "Confirmar saída", "Botão que confirma a saída da partida."),
     InfoTemplate("companheiro_morto", "principal", "Ícone de companheiro eliminado", "O ícone que aparece ao lado do nome de um companheiro eliminado na lista da squad. Recorte bem justo."),
     InfoTemplate("espectando", "principal", "Indicador de espectador", "Um trecho fixo do HUD que só aparece enquanto você assiste a um companheiro."),
 ]
 
 EXTRAS = [
+    InfoTemplate("menu_sanduiche", "extra", "Menu sanduíche (≡)", "Ícone de três tracinhos do menu ESC. Sem recorte, o app reconhece pelo formato."),
     InfoTemplate("fechar", "extra", "Botão Fechar", "Botão FECHAR de pop-ups."),
     InfoTemplate("tesouro_encontrado", "extra", "Tela Tesouro encontrado", "Título da tela de tesouro. Serve para salvar o print mesmo sem botão visível."),
     InfoTemplate("aviso_encontrou", "extra", "Aviso Você encontrou", "Só o texto VOCÊ ENCONTROU do aviso que surge no meio da tela durante a partida. É igual para qualquer recompensa, então dá para recortar no primeiro gizmo."),

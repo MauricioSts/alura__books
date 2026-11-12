@@ -101,3 +101,52 @@ def diferenca(a: np.ndarray | None, b: np.ndarray) -> float:
     if a is None or a.shape != b.shape:
         return 255.0
     return float(cv2.absdiff(a, b).mean())
+
+
+def achar_menu_sanduiche(imagem: np.ndarray) -> tuple[int, int, float] | None:
+    """Procura o ícone ≡ (três tracinhos claros iguais e empilhados). Devolve (x, y, confiança)."""
+    cinza = cv2.cvtColor(imagem, cv2.COLOR_BGR2GRAY) if imagem.ndim == 3 else imagem
+    altura_tela = cinza.shape[0]
+    _, claro = cv2.threshold(cinza, 200, 255, cv2.THRESH_BINARY)
+    contornos, _ = cv2.findContours(claro, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    larg_min, larg_max = max(8, int(altura_tela * 0.010)), max(20, int(altura_tela * 0.06))
+    alt_max = max(3, int(altura_tela * 0.009))
+    tracos = []
+    for c in contornos:
+        x, y, w, h = cv2.boundingRect(c)
+        if larg_min <= w <= larg_max and 1 <= h <= alt_max and w >= 3 * h \
+                and cv2.contourArea(c) >= 0.6 * w * h:
+            tracos.append((x, y, w, h))
+    tracos.sort(key=lambda t: (t[0] // 4, t[1]))
+    candidatos = []
+    for i, a in enumerate(tracos):
+        grupo = [a]
+        for b in tracos[i + 1:]:
+            ultimo = grupo[-1]
+            mesma_coluna = abs(b[0] - a[0]) <= max(3, a[2] * 0.15) and abs(b[2] - a[2]) <= max(3, a[2] * 0.2)
+            espaco = b[1] - ultimo[1]
+            if mesma_coluna and a[3] + 1 <= espaco <= a[2] * 0.6:
+                if len(grupo) >= 2 and abs(espaco - (grupo[1][1] - grupo[0][1])) > 2:
+                    continue  # espaçamento irregular: não é o ícone
+                grupo.append(b)
+                if len(grupo) == 3:
+                    break
+        if len(grupo) != 3:
+            continue
+        # Exatamente 3: um quarto traço logo acima ou abaixo indicaria uma lista, não o ícone.
+        passo = grupo[1][1] - grupo[0][1]
+        vizinho = any(abs(t[0] - a[0]) <= 3 and (abs(t[1] - (grupo[2][1] + passo)) <= 2
+                                                  or abs(t[1] - (grupo[0][1] - passo)) <= 2)
+                      for t in tracos)
+        if vizinho:
+            continue
+        x0, y0 = a[0], a[1]
+        y1 = grupo[2][1] + grupo[2][3]
+        # Quadradinho: ícone ≡ tem altura parecida com a largura.
+        proporcao = (y1 - y0) / float(a[2])
+        if 0.4 <= proporcao <= 1.3:
+            candidatos.append((x0 + a[2] // 2, (y0 + y1) // 2, 1.0 - abs(0.8 - proporcao)))
+    if not candidatos:
+        return None
+    # Mais de um: o mais alto na tela (menus ficam em cima).
+    return min(candidatos, key=lambda c: (c[1] // max(1, int(altura_tela * 0.05)), -c[2]))

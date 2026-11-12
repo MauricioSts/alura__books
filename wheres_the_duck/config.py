@@ -103,7 +103,7 @@ PADROES_TEXTO: dict[str, list[str]] = {
     "continuar": ["CONTINUAR"],
     "fechar": ["FECHAR"],
     "pular_onibus": ["PULAR", "SALTAR", "PULAR DO ÔNIBUS", "SALTAR DO ÔNIBUS"],
-    "sair_partida": ["SAIR DA PARTIDA", "SAIR"],
+    "sair_partida": ["VOLTAR AO LOBBY", "RETORNAR AO LOBBY", "SAIR DA PARTIDA", "SAIR"],
     "confirmar_sair": ["CONFIRMAR", "SIM"],
     "espectando": ["ESPECTANDO", "ASSISTINDO"],
     "tesouro_encontrado": ["TESOURO ENCONTRADO"],

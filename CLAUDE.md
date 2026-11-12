@@ -20,7 +20,7 @@ wheres_the_duck/
   captura.py         interface Capturador: CapturadorTela (mss) e CapturadorPasta (simulação)
   deteccao.py        Detector: TM_CCOEFF_NORMED em cinza, escala, contagem sem sobreposição; sem template, cai na leitura de texto
   texto.py           interface LeitorTexto: LeitorRapidOCR (OCR local) e LeitorFixo (testes); comparação tolerante
-  visao.py           barras de vida da squad (colegas vivos) e diferença de cenário (bot preso)
+  visao.py           barras de vida da squad (colegas vivos), diferença de cenário (bot preso) e ícone ≡ do menu
   entrada.py         interface Entrada: EntradaDireta (pydirectinput) e EntradaSimulada (dry-run)
   foco.py            interface Foco: FocoWindows (título da janela) e FocoSimulado; DPI awareness
   comportamentos.py  esconder, reposicionar, rondar, coletar, olhar; sorteio por peso
@@ -38,7 +38,7 @@ Dados do usuário ficam na raiz e fora do git: `config.json`, `templates/`, `cap
 
 ### Fluxo de um ciclo (`Maquina.tick`)
 
-1. Fora de foco: pausa. 2. Recompensa: print, clique em Resgatar, print no ciclo seguinte. 3. Tela de fim (`fim_partida`): Jogar novamente, senão Retornar ao lobby. 4. Jogar (cooldown próprio). 5. Continuar/Fechar. 6. Aviso do ônibus: agenda o salto com atraso aleatório. 7. Tempo máximo: saída pelo ESC. 8. Sozinho por N ciclos (ícone recortado ou, sem ele, nenhuma barra de vida de colega depois de ter visto alguma): saída pelo ESC. Também: espectando sumido por 2 ciclos = revivido (planeio); cenário parado enquanto anda = preso (desvio). 9. Movimento, executado em `animar()`.
+1. Fora de foco: pausa. 2. Recompensa: print, clique em Resgatar, print no ciclo seguinte. 3. Tela de fim (`fim_partida`): Jogar novamente, senão Retornar ao lobby. 4. Jogar (cooldown próprio). 5. Continuar/Fechar. 6. Aviso do ônibus: agenda o salto com atraso aleatório. 7. Tempo máximo: saída pelo ESC (adaptável: Confirmar > Voltar ao lobby > menu sanduíche ≡, este achado pelo formato em `visao.achar_menu_sanduiche`). 8. Sozinho por N ciclos (ícone recortado ou, sem ele, nenhuma barra de vida de colega depois de ter visto alguma): saída pelo ESC. Também: espectando sumido por 2 ciclos = revivido (planeio); cenário parado enquanto anda = preso (desvio). 9. Movimento, executado em `animar()`.
 
 `animar()` roda a cada 0,1 s e só move o personagem quando o último `tick` terminou com a tela livre (`_tela_livre`). O tempo é sempre passado como argumento (`agora`), o que permite relógio virtual na simulação e nos testes.
 
