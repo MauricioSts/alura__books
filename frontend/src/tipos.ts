@@ -113,6 +113,13 @@ export interface Config {
     monitor: number;
     titulo_janela: string;
   };
+  discord: {
+    ativo: boolean;
+    webhook_url: string;
+    filtro: "todas" | "sem_gizmo" | "so_pirata";
+    enviar_print: boolean;
+    mencao: string;
+  };
   textos: {
     ativo: boolean;
     largura_leitura: number;

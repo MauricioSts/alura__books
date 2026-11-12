@@ -37,6 +37,9 @@ class Motor:
         self.pasta_templates.mkdir(parents=True, exist_ok=True)
         self.recompensas = ArquivoRecompensas(self.pasta_capturas, self.base / "dados" / "recompensas.json")
         self.historico = Historico(self.base / "dados" / "historico.json")
+        from .notificacoes import NotificadorDiscord
+
+        self.discord = NotificadorDiscord(lambda: self.armazem.atual, self.pasta_capturas, registro)
         self.ultima_captura: Quadro | None = None
         self.previa_squad = None
 
@@ -237,6 +240,10 @@ class Motor:
 
     def _ao_recompensa(self, item: dict) -> None:
         self.publicar({"tipo": "recompensa", "item": item})
+        try:
+            self.discord.recompensa(item)
+        except Exception as erro:
+            self.log.aviso(f"Falha ao preparar o aviso do Discord: {erro}")
 
     # ------------------------------------------------------------------ estado
     def _em_foco_ocioso(self) -> bool:

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { api } from "../api";
 import { BarraSalvar, Cabecalho, Campo, Chave, Numero, Secao, useConfig } from "../componentes";
 import type { PesoDuracao } from "../tipos";
 
@@ -11,8 +13,19 @@ const COMPORTAMENTOS: { id: "esconder" | "reposicionar" | "rondar" | "coletar" |
 
 export default function Automacao() {
   const { config, definir, salvar, sujo, aviso } = useConfig();
+  const [testeDiscord, setTesteDiscord] = useState<{ ok: boolean; texto: string } | null>(null);
   if (!config) return <Cabecalho titulo="Automação" sub="Carregando…" />;
-  const { automacao: a, salto: s, movimento: m } = config;
+  const { automacao: a, salto: s, movimento: m, discord: dc } = config;
+
+  const testarDiscord = async () => {
+    setTesteDiscord(null);
+    try {
+      const r = await api.enviar<{ mensagem: string }>("POST", "/api/discord/testar", { webhook_url: dc.webhook_url });
+      setTesteDiscord({ ok: true, texto: r.mensagem });
+    } catch (e) {
+      setTesteDiscord({ ok: false, texto: (e as Error).message });
+    }
+  };
 
   return (
     <>
@@ -57,6 +70,31 @@ export default function Automacao() {
         <div style={{ marginTop: 12 }}>
           <Chave ligado={a.alertar_nao_identificada} aoMudar={(v) => definir("automacao.alertar_nao_identificada", v)}
             rotulo="Alertar com som quando aparecer uma recompensa sem template (pode ser o Acesso à Loja Pirata)" />
+        </div>
+      </Secao>
+
+      <Secao titulo="Avisos no Discord" nota="Opcional e desligado por padrão. Quando uma recompensa é capturada, o app manda o aviso (e o print) para o webhook do seu canal. É a única conexão para fora do PC; a URL fica só no config.json deste computador.">
+        <Chave ligado={dc.ativo} aoMudar={(v) => definir("discord.ativo", v)} rotulo="Avisar no Discord quando achar uma recompensa" />
+        <div className="grade" style={{ marginTop: 12 }}>
+          <Campo rotulo="URL do webhook" ajuda="Discord: Configurações do canal → Integrações → Webhooks → Copiar URL do webhook.">
+            <input type="text" value={dc.webhook_url} placeholder="https://discord.com/api/webhooks/…"
+              onChange={(e) => definir("discord.webhook_url", e.target.value.trim())} />
+          </Campo>
+          <Campo rotulo="Menção no Acesso à Loja Pirata" ajuda="Ex.: @everyone ou <@seu-id>. Só é usada no aviso do token.">
+            <input type="text" value={dc.mencao} onChange={(e) => definir("discord.mencao", e.target.value)} />
+          </Campo>
+        </div>
+        <div className="segmentos largos">
+          {([["todas", "Todas as recompensas"], ["sem_gizmo", "Tudo menos gizmo"], ["so_pirata", "Só o Acesso à Loja Pirata"]] as const).map(([id, rotulo]) => (
+            <button key={id} className={dc.filtro === id ? "ativo" : ""} onClick={() => definir("discord.filtro", id)}>{rotulo}</button>
+          ))}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Chave ligado={dc.enviar_print} aoMudar={(v) => definir("discord.enviar_print", v)} rotulo="Mandar o print junto" />
+        </div>
+        <div className="linha-acoes" style={{ marginTop: 8 }}>
+          <button className="botao fantasma" onClick={testarDiscord} disabled={!dc.webhook_url}>Enviar mensagem de teste</button>
+          {testeDiscord && <span className={`aviso ${testeDiscord.ok ? "ok" : "erro"}`}>{testeDiscord.texto}</span>}
         </div>
       </Secao>
 

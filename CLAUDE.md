@@ -27,6 +27,7 @@ wheres_the_duck/
   maquina.py         máquina de estados: tick() a cada ciclo, animar() entre ciclos
   recompensas.py     prints antes/depois, índice JSON, cópia extra do Acesso à Loja Pirata
   historico.py       sessões em JSON
+  notificacoes.py    aviso opcional no Discord (webhook do usuário), em segundo plano, uma vez por recompensa
   motor.py           thread que liga captura, máquina e publicação de estado; modos real, ensaio, simulação
   api.py             FastAPI em 127.0.0.1 + WebSocket; serve frontend/dist
   app.py             ponto de entrada: uvicorn em thread, atalho F8, janela pywebview
@@ -49,7 +50,7 @@ Dados do usuário ficam na raiz e fora do git: `config.json`, `templates/`, `cap
 - Nada que dê vantagem em combate: sem mira, sem leitura de posição de inimigos. O bot nunca atira, nunca constrói, nunca segue jogadores.
 - Nunca enviar input com o Fortnite fora de foco. Ao perder o foco, a única coisa permitida é soltar as teclas que estavam pressionadas.
 - F8 sempre para tudo e solta todas as teclas.
-- Nenhuma conexão externa, telemetria, login ou licença. A API escuta só em 127.0.0.1 e recusa Host/Origin que não sejam locais. Fontes e sons são locais.
+- Nenhuma conexão externa, telemetria, login ou licença, com uma única exceção pedida pelo usuário: o aviso de recompensa no Discord (`notificacoes.py`), desligado por padrão, que só envia para um webhook do Discord configurado pelo próprio usuário e só manda o aviso e o print. A URL do webhook nunca vai para o repositório nem para o .exe; fica só no `config.json` local. A API escuta só em 127.0.0.1 e recusa Host/Origin que não sejam locais. Fontes e sons são locais.
 - Nunca tocar em credenciais, tokens ou arquivos da conta Epic.
 - O README abre com o aviso de que automação viola os termos da Epic e pode dar ban.
 - Identidade visual própria; nada de marcas ou artes da Epic nem de outros apps.

@@ -123,6 +123,17 @@ BOTOES_TEXTO = {"jogar", "resgatar", "resgatar_tudo", "jogar_novamente", "retorn
                 "continuar", "fechar", "pular_onibus", "sair_partida", "confirmar_sair"}
 
 
+class Discord(BaseModel):
+    """Aviso opcional no Discord. Desligado por padrão; a URL fica só no config.json local."""
+
+    ativo: bool = False
+    webhook_url: str = ""
+    filtro: Literal["todas", "sem_gizmo", "so_pirata"] = "todas"
+    enviar_print: bool = True
+    # Ex.: "@everyone" ou "<@123456789>" — usada só no aviso do Acesso à Loja Pirata.
+    mencao: str = ""
+
+
 class Config(BaseModel):
     porta: int = Field(8765, ge=1024, le=65535)
     automacao: Automacao = Automacao()
@@ -130,6 +141,7 @@ class Config(BaseModel):
     movimento: Movimento = Movimento()
     deteccao: Deteccao = Deteccao()
     textos: Textos = Textos()
+    discord: Discord = Discord()
 
 
 class ArmazemConfig:

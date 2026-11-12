@@ -56,6 +56,10 @@ class PedidoIniciar(BaseModel):
     repetir: int = Field(1, ge=1, le=200)
 
 
+class PedidoTesteDiscord(BaseModel):
+    webhook_url: str | None = None
+
+
 class PedidoRecorte(BaseModel):
     x: int = Field(ge=0)
     y: int = Field(ge=0)
@@ -236,6 +240,14 @@ def criar_app(base: Path, armazem: ArmazemConfig | None = None,
             return await asyncio.to_thread(motor.testar_deteccao)
         except Exception as erro:
             raise HTTPException(500, f"Não foi possível testar: {erro}")
+
+    # ------------------------------------------------------------------ Discord
+    @app.post("/api/discord/testar")
+    async def testar_discord(pedido: PedidoTesteDiscord):
+        ok, msg = await asyncio.to_thread(motor.discord.testar, pedido.webhook_url)
+        if not ok:
+            raise HTTPException(400, msg)
+        return {"ok": True, "mensagem": msg}
 
     # ------------------------------------------------------------------ histórico
     @app.get("/api/historico")

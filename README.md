@@ -73,6 +73,15 @@ O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele 
 - **O problema do primeiro token**: você só consegue recortar `acesso_pirata` na sua resolução depois de vê-lo uma vez. Por isso, enquanto esse template não existir, o caminho é: recorte `aviso_encontrou` na primeira recompensa comum que aparecer e deixe ligado "Alertar quando aparecer uma recompensa sem template" (Automação, ligado por padrão). Toda recompensa que nenhum template reconhecer toca o alarme e mostra o print para você conferir; o bot continua rodando. Conforme você recorta os tipos comuns (gizmo, tela de carregamento, faixa, picareta), o alarme passa a tocar só para o que é raro.
 - **Acesso à Loja Pirata**: alerta em tela cheia que só some quando você fecha, som em loop até você confirmar, destaque permanente no topo do Painel e do Histórico e cópia extra dos prints em `capturas/acesso_pirata/`. Lembre-se: **o token precisa ser ativado na loja até 15/12/2026**. Depois dele, o app para tudo (padrão) ou continua farmando, conforme a tela Automação.
 
+## Aviso no Discord (opcional)
+
+Em **Automação → Avisos no Discord**, cole a URL de um webhook do seu canal (Discord: Configurações do canal → Integrações → Webhooks → Novo webhook → Copiar URL), ligue a chave e salve. Use **Enviar mensagem de teste** para conferir.
+
+- Cada recompensa capturada gera **um** aviso, com tipo, data, hora, número da partida e o print.
+- Filtro: todas, tudo menos gizmo, ou só o Acesso à Loja Pirata.
+- No Acesso à Loja Pirata, o aviso pode mencionar alguém (por exemplo `@everyone`).
+- Essa é a única conexão do app para fora do PC. Fica desligada até você configurar, e a URL fica só no `config.json` do seu computador. Não compartilhe essa URL: quem tiver ela consegue postar no seu canal.
+
 ## Instalação
 
 Requisitos: Windows 10 ou 11, [Python 3.11+](https://www.python.org/downloads/) (marque "Add python.exe to PATH") e [Node.js 18+](https://nodejs.org/) (só para compilar a interface na primeira vez).
@@ -238,7 +247,7 @@ Logs ficam em `logs/`, um arquivo por dia.
 - Não burla, não engana e não se esconde do anti-cheat: sem driver, sem injeção de DLL, sem leitura ou escrita de memória, sem spoofing de hardware, sem ocultar processo ou janela, sem nenhuma técnica para evitar detecção. As variações aleatórias de tempo e movimento existem para o bot não ficar preso nem cair sempre no mesmo lugar, não para se disfarçar.
 - Nenhuma vantagem em combate: sem mira, sem leitura de inimigos.
 - Nunca envia input com o jogo fora de foco.
-- Nenhuma conexão externa, telemetria, login ou licença. A API escuta só em `127.0.0.1` e recusa requisições de outras origens. Fontes e sons são locais.
+- Nenhuma conexão externa, telemetria, login ou licença, exceto o aviso opcional no Discord, que só existe se você configurar o seu webhook. A API escuta só em `127.0.0.1` e recusa requisições de outras origens. Fontes e sons são locais.
 - Não toca em credenciais, tokens nem arquivos da conta Epic.
 
 ## Decisões tomadas durante o desenvolvimento
