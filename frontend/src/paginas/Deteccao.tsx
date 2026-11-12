@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { api } from "../api";
-import { BarraSalvar, Cabecalho, Campo, Numero, Secao, useConfig } from "../componentes";
+import { BarraSalvar, Cabecalho, Campo, Chave, Numero, Secao, useConfig } from "../componentes";
+
+const ROTULOS_TEXTO: Record<string, string> = {
+  jogar: "Botão Jogar", resgatar: "Resgatar", resgatar_tudo: "Resgatar tudo", fim_partida: "Tela de fim",
+  jogar_novamente: "Jogar novamente", retornar_lobby: "Retornar ao lobby", continuar: "Continuar",
+  fechar: "Fechar", pular_onibus: "Pular do ônibus", sair_partida: "Sair (menu ESC)",
+  confirmar_sair: "Confirmar saída", espectando: "Espectando", tesouro_encontrado: "Tesouro encontrado",
+  aviso_encontrou: "Aviso Você encontrou", acesso_pirata: "Acesso à Loja Pirata",
+  traje_dourado: "Traje Dourado", veiculo: "Veículo e Decalque", picareta_costas: "Picareta ou Costas",
+  faixa: "Faixa de Improviso", tela_carregamento: "Tela de Carregamento", gizmo: "Gizmo",
+};
 import type { ResultadoTeste } from "../tipos";
 
 const EIXOS = ["x", "y", "largura", "altura"];
@@ -14,6 +24,7 @@ export default function Deteccao() {
 
   if (!config) return <Cabecalho titulo="Detecção" sub="Carregando…" />;
   const d = config.deteccao;
+  const t = config.textos;
 
   const testar = async () => {
     setErro("");
@@ -64,6 +75,31 @@ export default function Deteccao() {
         </div>
       </Secao>
 
+      <Secao titulo="Leitura de texto" nota="Sem precisar recortar nada: o app lê os textos da tela (no próprio PC, sem internet) e reconhece cada estado pelas palavras abaixo. Um template recortado, se existir, tem prioridade sobre o texto.">
+        <Chave ligado={t.ativo} aoMudar={(v) => definir("textos.ativo", v)} rotulo="Ler os textos da tela quando não houver template" />
+        <div className="grade" style={{ marginTop: 12 }}>
+          <Campo rotulo="Largura de leitura" ajuda="A tela é reduzida para essa largura antes de ler. Menor = mais rápido, letras pequenas somem.">
+            <Numero valor={t.largura_leitura} min={640} max={3840} passo={64} aoMudar={(v) => definir("textos.largura_leitura", v)} sufixo="px" />
+          </Campo>
+          <Campo rotulo="Confiança mínima" ajuda="Textos lidos com confiança menor são ignorados.">
+            <Numero valor={t.confianca_minima} min={0.1} max={1} passo={0.05} aoMudar={(v) => definir("textos.confianca_minima", v)} />
+          </Campo>
+        </div>
+        <details className="padroes">
+          <summary>Palavras que identificam cada estado (edite se o seu jogo mostrar outro texto)</summary>
+          <p className="nota">Um texto por linha. Maiúsculas, acentos e espaços não importam. Botões precisam bater com a linha inteira; os outros estados basta aparecer em algum lugar da tela.</p>
+          <div className="grade">
+            {Object.keys(ROTULOS_TEXTO).map((nome) => (
+              <Campo key={nome} rotulo={ROTULOS_TEXTO[nome]}>
+                <textarea rows={3} value={(t.padroes[nome] ?? []).join("\n")}
+                  onChange={(e) => definir("textos.padroes", { ...t.padroes, [nome]: e.target.value.split("\n") })}
+                  onBlur={(e) => definir("textos.padroes", { ...t.padroes, [nome]: e.target.value.split("\n").map((x) => x.trim()).filter(Boolean) })} />
+              </Campo>
+            ))}
+          </div>
+        </details>
+      </Secao>
+
       <Secao titulo="Região da squad" nota="Onde ficam os nomes dos companheiros (canto superior esquerdo), em frações da tela. É só ali que os ícones de eliminado são contados.">
         <div className="regiao">
           <div className="grade estreita">
@@ -98,19 +134,21 @@ export default function Deteccao() {
               Tela de {teste.largura}×{teste.altura}. Ícones de companheiro eliminado na região da squad:{" "}
               <strong>{teste.companheiros_mortos}</strong>.
             </p>
+            {teste.erro_leitura && <div className="aviso erro bloco">Falha na leitura de texto: {teste.erro_leitura}</div>}
             <table className="tabela compacta">
-              <thead><tr><th>Template</th><th>Score</th><th></th><th>Posição</th><th>Resultado</th></tr></thead>
+              <thead><tr><th>Estado</th><th>Fonte</th><th>Score</th><th></th><th>Posição</th><th>Resultado</th></tr></thead>
               <tbody>
                 {teste.resultados.map((r) => (
                   <tr key={r.nome} className={!r.configurado ? "apagado" : ""}>
                     <td><strong>{r.rotulo}</strong><span>{r.nome}</span></td>
+                    <td><span className="selo">{r.fonte === "template" ? "recorte" : r.fonte === "texto" ? "texto" : "—"}</span></td>
                     <td className="mono">{r.score === null ? "—" : r.score.toFixed(3)}</td>
                     <td className="col-barra">
                       <div className="barra"><i className={r.detectado ? "ok" : ""} style={{ width: `${Math.max(0, r.score ?? 0) * 100}%` }} /></div>
                     </td>
                     <td className="mono">{r.detectado ? `${r.x}, ${r.y}` : "—"}</td>
                     <td>
-                      {!r.configurado ? <span className="selo cinza">sem template</span>
+                      {!r.configurado ? <span className="selo cinza">sem template nem texto</span>
                         : r.detectado ? <span className="selo verde">detectado</span>
                         : <span className="selo">não está na tela</span>}
                     </td>
@@ -118,6 +156,16 @@ export default function Deteccao() {
                 ))}
               </tbody>
             </table>
+            {teste.leitura_ativa && (
+              <>
+                <h2 style={{ marginTop: 8 }}>Textos lidos na tela</h2>
+                <p className="nota">É isto que o app enxerga. Se um botão aparece aqui escrito de outro jeito, copie para as palavras do estado acima.</p>
+                <div className="textos-lidos">
+                  {teste.textos.length === 0 ? <span className="vazio">nenhum texto lido</span>
+                    : teste.textos.map((x, i) => <span key={i} title={`confiança ${x.confianca}`}>{x.texto}</span>)}
+                </div>
+              </>
+            )}
           </>
         )}
       </Secao>

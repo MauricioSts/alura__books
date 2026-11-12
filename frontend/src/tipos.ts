@@ -60,6 +60,8 @@ export interface InfoTemplate {
   configurado: boolean;
   versao: number;
   chance: number | null;
+  por_texto: boolean;
+  textos: string[];
 }
 
 export interface PesoDuracao { peso: number; duracao_min_s: number; duracao_max_s: number }
@@ -107,13 +109,23 @@ export interface Config {
     monitor: number;
     titulo_janela: string;
   };
+  textos: {
+    ativo: boolean;
+    largura_leitura: number;
+    confianca_minima: number;
+    padroes: Record<string, string[]>;
+  };
 }
 
 export interface ResultadoTeste {
   resultados: {
     nome: string; rotulo: string; grupo: string; configurado: boolean;
     score: number | null; detectado: boolean; x: number | null; y: number | null;
+    fonte: "template" | "texto" | "nenhuma";
   }[];
+  textos: { texto: string; confianca: number }[];
+  leitura_ativa: boolean;
+  erro_leitura: string;
   companheiros_mortos: number;
   largura: number;
   altura: number;

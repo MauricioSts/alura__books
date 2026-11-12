@@ -4,7 +4,7 @@ import { Cabecalho, Secao } from "../componentes";
 import type { InfoTemplate } from "../tipos";
 
 const GRUPOS: { id: InfoTemplate["grupo"]; titulo: string; nota: string }[] = [
-  { id: "principal", titulo: "Principais", nota: "Os 12 recortes que movem a máquina de estados. Template ausente não quebra nada: o estado correspondente é ignorado." },
+  { id: "principal", titulo: "Principais", nota: "Nada aqui é obrigatório: sem recorte, o app reconhece o estado lendo o texto da tela. Recorte só o que a leitura de texto não pegar (veja em Detecção → Testar detecção agora)." },
   { id: "recompensa", titulo: "Tipos de recompensa", nota: "Opcionais. Servem para classificar o print; sem eles a recompensa é salva como “não identificada”." },
   { id: "extra", titulo: "Extras", nota: "Opcionais. Ajudam a fechar pop-ups e a capturar telas de tesouro sem botão." },
 ];
@@ -141,13 +141,13 @@ export default function Templates() {
   };
 
   const principais = lista.filter((t) => t.grupo === "principal");
-  const prontos = principais.filter((t) => t.configurado).length;
+  const prontos = principais.filter((t) => t.configurado || t.por_texto).length;
 
   return (
     <>
       <Cabecalho titulo="Templates" sub="Recortes dos botões, feitos por você, na resolução e no idioma em que joga.">
         <span className={`selo grande ${prontos === principais.length && prontos > 0 ? "verde" : ""}`}>
-          {prontos} de {principais.length} principais configurados
+          {prontos} de {principais.length} reconhecíveis (recorte ou texto)
         </span>
       </Cabecalho>
       {erro && <div className="aviso erro bloco">{erro}</div>}
@@ -155,19 +155,21 @@ export default function Templates() {
         <Secao key={g.id} titulo={g.titulo} nota={g.nota}>
           <div className="templates">
             {lista.filter((t) => t.grupo === g.id).map((t) => (
-              <article key={t.nome} className={`template ${t.configurado ? "ok" : "falta"}`}>
+              <article key={t.nome} className={`template ${t.configurado || t.por_texto ? "ok" : "falta"}`}>
                 <div className="template-previa">
                   {t.configurado
                     ? <img src={`/api/templates/${t.nome}/imagem?v=${t.versao}`} alt={`Template ${t.rotulo}`} />
-                    : <span>faltando</span>}
+                    : <span>{t.por_texto ? "lido por texto" : "faltando"}</span>}
                 </div>
                 <div className="template-corpo">
                   <div className="template-titulo">
                     <strong>{t.rotulo}</strong>
-                    <span className={`selo ${t.configurado ? "verde" : "ambar"}`}>{t.configurado ? "configurado" : "faltando"}</span>
+                    <span className={`selo ${t.configurado || t.por_texto ? "verde" : "ambar"}`}>
+                      {t.configurado ? "recortado" : t.por_texto ? "por texto" : "faltando"}
+                    </span>
                   </div>
                   <code>{t.nome}.png</code>
-                  <p>{t.dica}</p>
+                  <p>{t.por_texto ? `Reconhecido pelo texto: ${t.textos.join(" · ")}. Recorte só se não funcionar.` : t.dica}</p>
                   <div className="template-acoes">
                     <button className="botao pequeno" onClick={() => setRecortando(t)}>Recortar da tela</button>
                     <label className="botao pequeno fantasma">

@@ -351,3 +351,15 @@ input[type="number"] { font-family: var(--mono); font-variant-numeric: tabular-n
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Leitura de texto */
+textarea {
+  background: var(--fundo); border: 1px solid var(--borda); border-radius: 6px; padding: 7px 10px;
+  width: 100%; resize: vertical; font: 12.5px/1.45 var(--mono); color: var(--texto);
+}
+.padroes { margin-top: 6px; }
+.padroes summary { cursor: pointer; color: var(--ambar); font-weight: 600; margin-bottom: 10px; }
+.textos-lidos { display: flex; flex-wrap: wrap; gap: 6px; }
+.textos-lidos span:not(.vazio) {
+  font: 12px var(--mono); padding: 2px 8px; border-radius: 5px; background: var(--fundo); border: 1px solid var(--borda);
+}
