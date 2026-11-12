@@ -207,7 +207,13 @@ def test_modo_espectador_e_espera_de_reinicio_longa_volta_ao_lobby(tmp_path):
     assert r.m.fase == Fase.ESPECTANDO
     for _ in range(25):  # passa de 3 min
         r.tick(*morto)
+        if r.m.fase == Fase.SAINDO:
+            break
     assert r.m.fase == Fase.SAINDO and ("tocar", "esc") in r.entrada.acoes
+    r.tick(linha("VOLTAR AO LOBBY", 820, 620))
+    r.tick()
+    r.tick()
+    assert r.m.fase == Fase.LOBBY
 
 
 def test_espera_de_reinicio_desligada(tmp_path):
