@@ -13,7 +13,7 @@ popd
 
 ".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --windowed --name WheresTheDuck ^
   --add-data "frontend/dist;frontend/dist" ^
-  --collect-submodules uvicorn --collect-submodules websockets ^
+  --collect-submodules uvicorn --collect-submodules websockets --collect-all rapidocr_onnxruntime --collect-binaries onnxruntime ^
   executar.py || (echo Falha ao gerar o executavel. & pause & exit /b 1)
 
 echo.

@@ -18,7 +18,8 @@ wheres_the_duck/
   catalogo.py        lista dos templates conhecidos (12 principais, extras, tipos de recompensa)
   registro.py        log em memória, arquivo diário e ouvintes
   captura.py         interface Capturador: CapturadorTela (mss) e CapturadorPasta (simulação)
-  deteccao.py        Detector: TM_CCOEFF_NORMED em cinza, escala, contagem sem sobreposição
+  deteccao.py        Detector: TM_CCOEFF_NORMED em cinza, escala, contagem sem sobreposição; sem template, cai na leitura de texto
+  texto.py           interface LeitorTexto: LeitorRapidOCR (OCR local) e LeitorFixo (testes); comparação tolerante
   entrada.py         interface Entrada: EntradaDireta (pydirectinput) e EntradaSimulada (dry-run)
   foco.py            interface Foco: FocoWindows (título da janela) e FocoSimulado; DPI awareness
   comportamentos.py  esconder, reposicionar, rondar, coletar, olhar; sorteio por peso
@@ -54,7 +55,9 @@ Dados do usuário ficam na raiz e fora do git: `config.json`, `templates/`, `cap
 
 ## Convenções
 
-- Template ausente nunca quebra o app: o estado correspondente é ignorado. Todo código novo de detecção precisa manter isso (há testes).
+- Template ausente nunca quebra o app: o estado é reconhecido pelo texto (padrões em `config.PADROES_TEXTO`, editáveis em `textos.padroes`) ou ignorado. Template recortado tem prioridade. Todo código novo de detecção precisa manter isso (há testes).
+- O OCR roda no máximo uma vez por ciclo (cache em `Preparado.linhas`) e erro de OCR nunca derruba o motor.
+- Nada de baixar modelos ou imagens em tempo de execução: o OCR usa só os modelos do pacote.
 - Input e foco sempre atrás das interfaces `Entrada` e `Foco`; nada de chamar pydirectinput fora de `entrada.py`.
 - Interrupções usam `Maquina._interromper()` (abandona o comportamento e solta as teclas, sem novos toques).
 - Mudou a máquina de estados ou a detecção: acrescente teste com imagem sintética e rode o pytest e o build do frontend antes de concluir.

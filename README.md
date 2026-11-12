@@ -4,7 +4,7 @@
 
 Where's the Duck é um aplicativo desktop para Windows que deixa o Fortnite rodando sozinho em Battle Royale ou Zero Build, em **Esquadrão + Preencher**, durante o evento de caça ao tesouro. Ele entra na partida, evita a expulsão por inatividade, fica assistindo enquanto houver companheiro vivo, clica em **Resgatar** quando a tela de tesouro aparece, salva os prints e puxa outra partida quando não faz mais sentido ficar.
 
-Ele faz isso do jeito mais simples possível: tira prints da tela, procura recortes de botões que você mesmo fez (template matching do OpenCV) e simula teclado e mouse. Não lê memória do jogo, não injeta nada, não usa driver.
+Ele faz isso do jeito mais simples possível: tira prints da tela, **lê os textos que aparecem nela** (OCR que roda no próprio PC, sem internet) e simula teclado e mouse. Você não precisa recortar nada: o app reconhece "JOGAR", "RESGATAR", "VOCÊ ENCONTROU", "ACESSO À LOJA PIRATA" etc. sozinho. Recortes de botão (templates) continuam existindo como opção, para o caso de algum texto não ser lido. Não lê memória do jogo, não injeta nada, não usa driver.
 
 ## O que ele faz a cada ciclo (~1,5 s)
 
@@ -100,7 +100,38 @@ O executável não é assinado. O Windows SmartScreen vai avisar na primeira vez
 - Deixe o modo Esquadrão com **Preencher** ligado, e não mude resolução nem idioma depois de recortar os templates.
 - Teclas no padrão: W/A/S/D, Espaço, Shift para correr, Ctrl para agachar, F para a picareta. Se as suas forem outras, ajuste em Automação.
 
-## Como recortar cada template
+## Reconhecimento automático (sem prints)
+
+Por padrão, cada estado é reconhecido pelo texto na tela:
+
+| Estado | Textos procurados (padrão) |
+|---|---|
+| Lobby | JOGAR (o maior texto "JOGAR" da tela, para não confundir com a aba) |
+| Recompensa | VOCÊ ENCONTROU, ACESSO DESBLOQUEADO, TESOURO ENCONTRADO, RESGATAR, RESGATAR TUDO |
+| Tipo da recompensa | LOJA PIRATA, TRAJE DOURADO, VEÍCULO, PICARETA, FAIXA DE IMPROVISO, TELA DE CARREGAMENTO, GIZMO |
+| Fim de partida | ESQUADRÃO ELIMINADO, VOCÊ FICOU EM… ou, sem isso, JOGAR NOVAMENTE / RETORNAR AO LOBBY por 2 ciclos **sem** ESPECTANDO na tela |
+| Ônibus | PULAR, SALTAR (ignorado no lobby) |
+| Espectando | ESPECTANDO, ASSISTINDO |
+| Menu ESC | SAIR DA PARTIDA, SAIR, CONFIRMAR, SIM |
+| Pop-ups | CONTINUAR, FECHAR |
+
+Maiúsculas, acentos e espaços não importam, e pequenos erros de leitura são tolerados.
+
+**Os textos acima são palpites** para o jogo em português do Brasil; eu não consegui conferir cada tela do jogo. Se algum estado não for reconhecido:
+
+1. Deixe o jogo naquela tela e use **Detecção → Testar detecção agora**. Além do score de cada estado, aparece a lista **"Textos lidos na tela"**, ou seja, exatamente o que o app enxergou.
+2. Copie o texto certo para o estado em **Detecção → Leitura de texto → Palavras que identificam cada estado** e salve.
+3. Só se mesmo assim não der certo, recorte um template daquele estado (abaixo). O recorte tem prioridade sobre o texto.
+
+O único estado que **não** tem versão por texto é o ícone de companheiro eliminado (`companheiro_morto`), porque é um desenho, não texto. Sem ele, o bot não sai antecipadamente quando sobra sozinho; fica até morrer e a partida acabar, o que só custa alguns minutos por partida.
+
+Custo: a leitura leva cerca de 0,3 a 0,6 s por ciclo e usa 2 núcleos da CPU. Se o jogo pesar, diminua a "Largura de leitura" (Detecção) ou aumente o intervalo de checagem.
+
+### Por que não usar imagens prontas da internet
+
+O template matching compara pixel a pixel. Um recorte feito por outra pessoa, em outra resolução, outra escala de HUD ou outro idioma, não casa com a sua tela. Por isso o app lê o texto em vez de depender de imagens, e nenhuma arte do jogo vem junto com ele.
+
+## Como recortar um template (opcional)
 
 Os templates são PNGs recortados **por você**, na **sua** resolução e no **seu** idioma. Eles ficam em `templates/` e não vão para o git.
 
@@ -130,7 +161,7 @@ Regras para um bom recorte:
 
 Opcionais: `fechar` (pop-ups), `tesouro_encontrado` e `aviso_encontrou` (para salvar print mesmo sem botão) e os sete tipos de recompensa (`acesso_pirata`, `traje_dourado`, `veiculo`, `picareta_costas`, `faixa`, `tela_carregamento`, `gizmo`). Para os tipos de recompensa você só consegue recortar depois de ver cada tela ao menos uma vez; os prints salvos como "não identificada" servem de fonte.
 
-**Template ausente nunca quebra o app**: o estado correspondente é simplesmente ignorado. O mínimo útil é `jogar`, `resgatar`, `fim_partida`, `retornar_lobby` e `pular_onibus`.
+**Template ausente nunca quebra o app**: o estado é reconhecido pelo texto ou, se a leitura de texto estiver desligada, simplesmente ignorado.
 
 Atenção ao `fim_partida`: o botão Retornar ao lobby também aparece enquanto você assiste a um companheiro. Por isso o app só trata como fim de partida quando o template `fim_partida` está na tela. Escolha um trecho que **não** apareça durante o modo espectador.
 
@@ -164,6 +195,9 @@ Tudo é gravado em `config.json`, na raiz, e pode ser editado pela interface ou 
 | "Fortnite fora de foco" mesmo com o jogo aberto | O título da janela precisa conter o texto de Detecção → Título da janela do jogo (padrão `Fortnite`). Clique na janela do jogo. |
 | O app vê os botões, mas os cliques e teclas não chegam ao jogo | Se o jogo ou o launcher roda como administrador, o Windows bloqueia input vindo de um programa sem a mesma permissão. Rode o `iniciar.bat` como administrador. |
 | Clique cai deslocado | Jogue no monitor principal, em tela cheia em janela. Confira a escala do Windows; o app já ativa DPI awareness, mas recorte os templates de novo se mudou a escala. |
+| Um estado não é reconhecido pelo texto | Detecção → Testar detecção agora, com o jogo naquela tela. Veja em "Textos lidos na tela" como o texto aparece e copie para as palavras daquele estado. |
+| "Leitura de texto indisponível" no log | Falta o pacote `rapidocr_onnxruntime`. Rode `iniciar.bat` de novo ou use o .exe, que já vem com ele. |
+| Jogo travando com o bot ligado | Diminua a largura de leitura (por exemplo 960) ou aumente o intervalo de checagem para 2 s. |
 | Nada é detectado | Rode Detecção → Testar detecção agora com a tela certa aberta. Score baixo: refaça o recorte, mais justo. Se mudou resolução, idioma ou escala de HUD, todos os templates precisam ser refeitos. |
 | Detecta coisa que não está na tela | Suba o limiar (0,85 a 0,90) ou refaça o recorte com mais detalhe. |
 | Captura preta | Troque tela cheia exclusiva por tela cheia em janela. |
@@ -204,6 +238,9 @@ Logs ficam em `logs/`, um arquivo por dia.
 - **Aviso do token sem botão**: é registrado uma vez; com "parar tudo" ligado, o app para ali mesmo, no meio da partida, e solta as teclas.
 - **Recompensa sem template** dispara alarme por padrão (sem parar o bot), porque o template do token não pode ser recortado antes de ele aparecer.
 - **Agachar** é tratado como alternado por padrão (um toque agacha), configurável.
+- **Leitura de texto (OCR)** com RapidOCR, que roda local e traz os modelos dentro do pacote (sem download na primeira execução). Foi escolhido no lugar do OCR do Windows porque dá para testar fora do Windows e vai embutido no .exe.
+- **Fim de partida sem template**: inferido por Jogar novamente / Retornar ao lobby visível por 2 ciclos sem "Espectando", para não sair enquanto assiste a um colega.
+- **"Loja Pirata" escrito na tela só conta junto do aviso "Você encontrou"**, porque o lobby pode mostrar a loja do evento.
 - **Templates extras** além dos 12: `fechar`, `tesouro_encontrado`, `aviso_encontrou` e os sete tipos de recompensa, todos opcionais.
 - **Modo Ensaio** foi acrescentado além da Simulação pedida.
 - **`config.json` fica fora do git**: é criado com os padrões na primeira execução. Arquivo corrompido é renomeado para `config.invalido.json` e os padrões voltam.
