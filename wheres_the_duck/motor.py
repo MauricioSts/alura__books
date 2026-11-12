@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
+import cv2
+
 from . import catalogo
 from .captura import Capturador, CapturadorPasta, CapturadorTela, Quadro
 from .config import ArmazemConfig
@@ -36,6 +38,7 @@ class Motor:
         self.recompensas = ArquivoRecompensas(self.pasta_capturas, self.base / "dados" / "recompensas.json")
         self.historico = Historico(self.base / "dados" / "historico.json")
         self.ultima_captura: Quadro | None = None
+        self.previa_squad = None
 
         self._trava = threading.Lock()
         self._thread: threading.Thread | None = None
@@ -317,9 +320,20 @@ class Motor:
                 "y": achado.y if detectado and achado else None,
             })
         linhas = detector.ler_textos(prep) if detector.leitor else []
+        from .visao import barras_de_vida, contar_companheiros_vivos, recortar_regiao
+
+        barras = barras_de_vida(quadro.imagem, cfg.regiao_squad)
+        recorte, ox, oy = recortar_regiao(quadro.imagem.copy(), cfg.regiao_squad)
+        for b in barras:
+            cv2.rectangle(recorte, (b.x - ox - 2, b.y - oy - 2), (b.x - ox + b.largura + 2, b.y - oy + b.altura + 2),
+                          (0, 200, 255), 2)
+        self.previa_squad = recorte
         return {
             "resultados": resultados,
             "companheiros_mortos": detector.contar(prep, "companheiro_morto", cfg.regiao_squad),
+            "companheiros_vivos": contar_companheiros_vivos(quadro.imagem, cfg.regiao_squad),
+            "fonte_sozinho": "template" if detector.tem("companheiro_morto") else (
+                "barras" if cfg.barras_vida else "nenhuma"),
             "largura": int(quadro.imagem.shape[1]), "altura": int(quadro.imagem.shape[0]),
             "textos": [{"texto": l.texto, "confianca": round(l.confianca, 2)} for l in linhas],
             "leitura_ativa": detector.leitor is not None,

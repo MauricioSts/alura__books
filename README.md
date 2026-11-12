@@ -17,7 +17,7 @@ Nesta ordem de prioridade:
 5. **Pop-up** com Continuar ou Fechar: clica.
 6. **Aviso de pular do ônibus**: agenda o salto para o trecho final da rota.
 7. **Tempo máximo de partida** (0 = desligado): sai pelo menu ESC.
-8. **Sobrou só o bot vivo**: se o número de ícones de companheiro eliminado for igual ao número de companheiros, por 3 ciclos seguidos e sem estar espectando, sai pelo menu ESC (ESC, Sair, Confirmar).
+8. **Sobrou só o bot vivo**: o app conta as barras de vida e escudo dos colegas na lista da squad (canto superior direito). Se já tinha visto colegas nesta partida e nenhuma barra aparece por 3 ciclos seguidos, sem estar espectando, sai pelo menu ESC (ESC, Sair, Confirmar). Colega derrubado (barra vermelha) ainda conta como vivo. Se você recortar o ícone `companheiro_morto`, a contagem de ícones é usada no lugar das barras.
 9. **Movimento anti-inatividade**, descrito abaixo.
 
 ### Salto e pouso
@@ -37,6 +37,10 @@ Comportamentos sorteados por peso, com duração variável, todos configuráveis
 | Olhar em volta | Giro lento de câmera, sem andar. |
 
 O bot **nunca atira, nunca constrói e nunca segue jogadores**. Espectando, ele reduz o input a um pequeno movimento de mouse de tempos em tempos.
+
+**Preso em obstáculo:** a cada ciclo o app compara o cenário (faixa central de cima da tela, sem o personagem) com o do ciclo anterior. Se o bot está andando e a imagem praticamente não muda por 2 ciclos, ele está batendo em algo: pula, vira de 90° a 180° e muda de direção. No pouso, se já está parado no chão, ele encerra o planeio e começa a se mover. O "Reposicionar" também faz desvios curtos para os lados (A/D) e o "Rondar" usa W, A, S e D.
+
+**Revivido:** se o bot estava espectando e o indicador de espectador some por 2 ciclos seguidos, ele foi revivido (reinício): segura W e abre o planador por 35 s (configurável), depois volta aos comportamentos normais.
 
 **O bot não foge da tempestade.** Ele não enxerga o mapa. Em algum momento ele vai morrer para a tempestade ou para outro jogador e seguir espectando os companheiros. Isso é esperado: o objetivo é só continuar na partida enquanto o esquadrão abre baús.
 
@@ -203,6 +207,10 @@ Tudo é gravado em `config.json`, na raiz, e pode ser editado pela interface ou 
 | Captura preta | Troque tela cheia exclusiva por tela cheia em janela. |
 | O bot sai da partida com companheiros vivos | O template `companheiro_morto` está casando com outra coisa. Recorte mais justo, confira a região da squad e o número de companheiros. |
 | O bot nunca sai quando fica sozinho | Faltam `companheiro_morto`, `sair_partida` ou `confirmar_sair`, ou o Preencher completou menos de 3 companheiros (ajuste o número em Automação). |
+| O bot só segura W e não vira a câmera | O giro é enviado como movimento relativo do mouse. Aumente "Pixels de mouse por grau" em Automação (por exemplo 20 a 40) até 90° virar 90°. |
+| O bot fica empurrando a parede | Aumente a "Sensibilidade de 'preso'" em Automação (por exemplo 3) para ele desviar mais cedo. |
+| Ele desvia toda hora mesmo andando | Diminua a "Sensibilidade de 'preso'" (por exemplo 0,8). |
+| Sai da partida com colegas vivos, ou nunca sai | Em Detecção, com uma partida aberta, rode o teste e olhe a prévia da região da squad: as barras dos colegas precisam estar dentro do recorte e aparecer contornadas. Ajuste a região. |
 | A câmera vira muito ou pouco no salto | Ajuste "Pixels de mouse por grau" em Automação até 90° virar 90° na sua sensibilidade. |
 | O bot é ejetado do ônibus antes de saltar | A rota era curta. Diminua os atrasos do salto. |
 | Expulso por inatividade | Diminua a duração do Esconder e o intervalo de input ao espectar; confira o log para ver se o app estava pausado por falta de foco. |
@@ -237,6 +245,9 @@ Logs ficam em `logs/`, um arquivo por dia.
 - **Tela de resgate travada**: se a tela continua praticamente idêntica depois do clique, o app clica de novo sem contar outro tesouro.
 - **Aviso do token sem botão**: é registrado uma vez; com "parar tudo" ligado, o app para ali mesmo, no meio da partida, e solta as teclas.
 - **Recompensa sem template** dispara alarme por padrão (sem parar o bot), porque o template do token não pode ser recortado antes de ele aparecer.
+- **Lista da squad no canto superior direito** (região padrão 60% a 90% da largura, metade de cima), à esquerda do minimapa. Quem tinha a região antiga padrão no `config.json` é migrado automaticamente; uma região editada à mão é mantida.
+- **"Sozinho" sem recorte** é decidido pelas barras de vida e escudo coloridas dos colegas. Só vale depois de o app ter visto pelo menos uma barra de colega na partida, para não sair por causa de uma região errada ou de um HUD diferente.
+- **Revivido** = indicador de espectador sumido por 2 ciclos. O primeiro ciclo sem ele não basta, para não confundir com uma leitura falha.
 - **Agachar** é tratado como alternado por padrão (um toque agacha), configurável.
 - **Leitura de texto (OCR)** com RapidOCR, que roda local e traz os modelos dentro do pacote (sem download na primeira execução). Foi escolhido no lugar do OCR do Windows porque dá para testar fora do Windows e vai embutido no .exe.
 - **Fim de partida sem template**: inferido por Jogar novamente / Retornar ao lobby visível por 2 ciclos sem "Espectando", para não sair enquanto assiste a um colega.

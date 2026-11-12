@@ -100,7 +100,9 @@ export default function Deteccao() {
         </details>
       </Secao>
 
-      <Secao titulo="Região da squad" nota="Onde ficam os nomes dos companheiros (canto superior esquerdo), em frações da tela. É só ali que os ícones de eliminado são contados.">
+      <Secao titulo="Região da squad" nota="Onde fica a lista dos companheiros (por padrão, o canto superior direito, à esquerda do minimapa), em frações da tela. O app conta ali as barras de vida e escudo dos colegas: quando nenhuma aparece por alguns ciclos e o bot não está espectando, ele sai da partida. Confira com o teste abaixo, durante uma partida.">
+        <Chave ligado={d.barras_vida} aoMudar={(v) => definir("deteccao.barras_vida", v)}
+          rotulo="Saber se sobrou sozinho pelas barras de vida dos colegas (sem recorte)" />
         <div className="regiao">
           <div className="grade estreita">
             {EIXOS.map((eixo, i) => (
@@ -131,9 +133,14 @@ export default function Deteccao() {
         {teste && (
           <>
             <p className="nota">
-              Tela de {teste.largura}×{teste.altura}. Ícones de companheiro eliminado na região da squad:{" "}
-              <strong>{teste.companheiros_mortos}</strong>.
+              Tela de {teste.largura}×{teste.altura}. Colegas vivos (barras na região da squad):{" "}
+              <strong>{teste.companheiros_vivos}</strong>
+              {teste.fonte_sozinho === "template" && <> · ícones de eliminado: <strong>{teste.companheiros_mortos}</strong></>}.
             </p>
+            <div className="previa-squad">
+              <img src={`/api/deteccao/squad.png?c=${teste.largura}-${Date.now()}`} alt="Região da squad com as barras encontradas" />
+              <span className="nota">Recorte da região da squad. Cada barra contada aparece contornada em laranja. Se a lista dos colegas não estiver aqui dentro, ajuste a região acima.</span>
+            </div>
             {teste.erro_leitura && <div className="aviso erro bloco">Falha na leitura de texto: {teste.erro_leitura}</div>}
             <table className="tabela compacta">
               <thead><tr><th>Estado</th><th>Fonte</th><th>Score</th><th></th><th>Posição</th><th>Resultado</th></tr></thead>

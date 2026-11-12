@@ -33,6 +33,8 @@ class Salto(BaseModel):
     abrir_planador_cedo: bool = True
     # Tempo segurando W depois do salto (o app não enxerga o chão).
     tempo_planando_s: float = Field(80, ge=5, le=300)
+    # Depois de ser revivido (reinício na van): cai do céu, segura W e abre o planador.
+    tempo_planando_renascer_s: float = Field(35, ge=5, le=300)
 
 
 class PesoDuracao(BaseModel):
@@ -44,6 +46,8 @@ class PesoDuracao(BaseModel):
 class Movimento(BaseModel):
     # Limite de inatividade presumido do jogo; "esconder" nunca passa de 80% disso.
     limite_inatividade_s: float = Field(60, ge=10, le=600)
+    # Mudança média mínima do cenário entre dois ciclos para considerar que o bot está andando.
+    limiar_preso: float = Field(1.5, ge=0.2, le=30)
     intervalo_espectando_s: float = Field(40, ge=5, le=300)
     # Quantos pixels de mouse equivalem a 1 grau de câmera (depende da sensibilidade).
     pixels_por_grau: float = Field(10, ge=0.5, le=200)
@@ -58,12 +62,19 @@ class Movimento(BaseModel):
     olhar: PesoDuracao = PesoDuracao(peso=2, duracao_min_s=3, duracao_max_s=8)
 
 
+REGIAO_SQUAD_PADRAO = (0.6, 0.0, 0.3, 0.5)
+REGIAO_SQUAD_ANTIGA = [0.0, 0.0, 0.28, 0.5]
+
+
 class Deteccao(BaseModel):
     limiar: float = Field(0.82, ge=0.3, le=0.99)
     limiar_recompensa: float = Field(0.80, ge=0.3, le=0.99)
     escala: float = Field(0.5, ge=0.2, le=1.0)
     # Região da lista da squad em frações da tela: x, y, largura, altura.
-    regiao_squad: list[float] = Field(default=[0.0, 0.0, 0.28, 0.5], min_length=4, max_length=4)
+    # Região da lista da squad (canto superior direito por padrão, ao lado do minimapa).
+    regiao_squad: list[float] = Field(default=list(REGIAO_SQUAD_PADRAO), min_length=4, max_length=4)
+    # Sem o recorte do ícone de eliminado: sozinho = nenhuma barra de vida de companheiro na região.
+    barras_vida: bool = True
     monitor: int = Field(1, ge=1, le=8)
     titulo_janela: str = "Fortnite"
 
@@ -129,7 +140,14 @@ class ArmazemConfig:
     def _ler(self) -> Config:
         if self.caminho.exists():
             try:
-                return Config.model_validate(json.loads(self.caminho.read_text(encoding="utf-8")))
+                dados = json.loads(self.caminho.read_text(encoding="utf-8"))
+                det = dados.get("deteccao") if isinstance(dados, dict) else None
+                if isinstance(det, dict) and det.get("regiao_squad") == REGIAO_SQUAD_ANTIGA:
+                    # A região padrão antiga (canto esquerdo) estava errada: atualiza só se não foi mexida.
+                    det["regiao_squad"] = list(REGIAO_SQUAD_PADRAO)
+                cfg = Config.model_validate(dados)
+                self._gravar(cfg)
+                return cfg
             except Exception:
                 # Mantém uma cópia do arquivo problemático e segue com os padrões.
                 try:

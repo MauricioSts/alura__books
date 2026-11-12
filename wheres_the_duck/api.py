@@ -204,6 +204,13 @@ def criar_app(base: Path, armazem: ArmazemConfig | None = None,
             raise HTTPException(500, f"Não foi possível capturar a tela: {erro}")
         return {"largura": int(quadro.imagem.shape[1]), "altura": int(quadro.imagem.shape[0])}
 
+    @app.get("/api/deteccao/squad.png")
+    def previa_squad():
+        if motor.previa_squad is None or motor.previa_squad.size == 0:
+            raise HTTPException(404, "Rode o teste de detecção primeiro.")
+        return Response(codificar_png(motor.previa_squad), media_type="image/png",
+                        headers={"Cache-Control": "no-store"})
+
     @app.get("/api/captura/imagem")
     def imagem_captura():
         if motor.ultima_captura is None:

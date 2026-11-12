@@ -74,6 +74,9 @@ export default function Automacao() {
           <Campo rotulo="Tempo segurando W" ajuda="O app não enxerga o chão; segura W por esse tempo.">
             <Numero valor={s.tempo_planando_s} min={5} max={300} aoMudar={(v) => definir("salto.tempo_planando_s", v)} sufixo="s" />
           </Campo>
+          <Campo rotulo="Planeio depois de ser revivido" ajuda="Ao voltar do modo espectador (reinício), segura W e abre o planador por esse tempo.">
+            <Numero valor={s.tempo_planando_renascer_s} min={5} max={300} aoMudar={(v) => definir("salto.tempo_planando_renascer_s", v)} sufixo="s" />
+          </Campo>
           <Campo rotulo="Pixels de mouse por grau" ajuda="Depende da sua sensibilidade. Ajuste até 90° virar 90°.">
             <Numero valor={m.pixels_por_grau} min={0.5} max={200} passo={0.5} aoMudar={(v) => definir("movimento.pixels_por_grau", v)} sufixo="px" />
           </Campo>
@@ -104,6 +107,9 @@ export default function Automacao() {
         <div className="grade">
           <Campo rotulo="Limite de inatividade presumido" ajuda="Esconder nunca passa de 80% desse tempo.">
             <Numero valor={m.limite_inatividade_s} min={10} max={600} aoMudar={(v) => definir("movimento.limite_inatividade_s", v)} sufixo="s" />
+          </Campo>
+          <Campo rotulo="Sensibilidade de 'preso'" ajuda="Se o cenário mudar menos que isso em 2 leituras seguidas enquanto anda, o bot pula e muda de direção. Maior = desvia mais cedo.">
+            <Numero valor={m.limiar_preso} min={0.2} max={30} passo={0.1} aoMudar={(v) => definir("movimento.limiar_preso", v)} />
           </Campo>
           <Campo rotulo="Input mínimo ao espectar" ajuda="Um pequeno movimento de mouse a cada intervalo.">
             <Numero valor={m.intervalo_espectando_s} min={5} max={300} aoMudar={(v) => definir("movimento.intervalo_espectando_s", v)} sufixo="s" />

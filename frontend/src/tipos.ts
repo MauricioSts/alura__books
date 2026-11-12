@@ -86,9 +86,11 @@ export interface Config {
     angulo_graus: number;
     abrir_planador_cedo: boolean;
     tempo_planando_s: number;
+    tempo_planando_renascer_s: number;
   };
   movimento: {
     limite_inatividade_s: number;
+    limiar_preso: number;
     intervalo_espectando_s: number;
     pixels_por_grau: number;
     tecla_agachar: string;
@@ -106,6 +108,7 @@ export interface Config {
     limiar_recompensa: number;
     escala: number;
     regiao_squad: number[];
+    barras_vida: boolean;
     monitor: number;
     titulo_janela: string;
   };
@@ -127,6 +130,8 @@ export interface ResultadoTeste {
   leitura_ativa: boolean;
   erro_leitura: string;
   companheiros_mortos: number;
+  companheiros_vivos: number;
+  fonte_sozinho: "template" | "barras" | "nenhuma";
   largura: number;
   altura: number;
 }

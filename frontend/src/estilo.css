@@ -363,3 +363,6 @@ textarea {
 .textos-lidos span:not(.vazio) {
   font: 12px var(--mono); padding: 2px 8px; border-radius: 5px; background: var(--fundo); border: 1px solid var(--borda);
 }
+.previa-squad { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 14px; }
+.previa-squad img { max-width: min(520px, 100%); border: 1px solid var(--borda); border-radius: 6px; }
+.previa-squad .nota { flex: 1 1 220px; margin: 0; }
